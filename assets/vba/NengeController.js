@@ -305,7 +305,7 @@ class NengeController{
             T.$('.g-info').hidden = false;
             if(C.cheatTxt==undefined){
                 let u8ddata = await M.db.userdata.data(C.cheatpath+M.gameID.replace(/\.gba$/,'.cheat'));
-                console.log(u8ddata);
+                ///console.log(u8ddata);
                 if(u8ddata)C.cheatTxt = new TextDecoder().decode(u8ddata);
             }
             html +=`<p><textarea class="cheat_txt">${C.cheatTxt||""}</textarea></p><p>Cheat code:\nGameshark: XXXXXXXXYYYYYYYY\nAction Replay: XXXXXXXX YYYY</p><p><button data-act="applycheat">${T.getLang('apply cheat')}</button> <button data-act="loadcheat">${T.getLang('load cheat')}</button> <button data-act="close">${T.getLang('close')}</button></p>`;
