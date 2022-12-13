@@ -134,6 +134,7 @@ class NengeController{
         'Filemanager':'File Manager',
         'keysetting':'Key setting',
     }
+    cheatpath = "/userdata/cheats/VBA Next/";
     action = {
         BulidButton(){
             let C=this,T=C.T,I=C.I,Module = T.Module,BtnContent = Nttr('.game-controller'),leftContent = BtnContent.$('.g-left'),RightContent = BtnContent.$('.g-right'),lefthtml="",righthtml="";
@@ -302,7 +303,11 @@ class NengeController{
         async opencheat(){
             let C=this,M=C.Module,T=M.T,html="";
             T.$('.g-info').hidden = false;
-            if(C.cheatTxt==undefined)C.cheatTxt = new TextDecoder().decode(await M.db.userdata.get("/userdata/cheats/VBA Next/"+M.gameID.replace(/\.gba$/,'.cheat')));
+            if(C.cheatTxt==undefined){
+                let u8ddata = await M.db.userdata.data(C.cheatpath+M.gameID.replace(/\.gba$/,'.cheat'));
+                console.log(u8ddata);
+                if(u8ddata)C.cheatTxt = new TextDecoder().decode(u8ddata);
+            }
             html +=`<p><textarea class="cheat_txt">${C.cheatTxt||""}</textarea></p><p>Cheat code:\nGameshark: XXXXXXXXYYYYYYYY\nAction Replay: XXXXXXXX YYYY</p><p><button data-act="applycheat">${T.getLang('apply cheat')}</button> <button data-act="loadcheat">${T.getLang('load cheat')}</button> <button data-act="close">${T.getLang('close')}</button></p>`;
             T.$('.g-lastInfo').innerHTML = html;
 
@@ -532,7 +537,7 @@ class NengeController{
                         T.$('.g-info').hidden = true;
                     }else if(act=="loadcheat"){
                         if(T.$('.cheat_txt')){
-                            let cheat = await M.db.userdata.data("/userdata/cheats/VBA Next/"+M.gameID.replace(/\.gba$/,'.cheat'));
+                            let cheat = await M.db.userdata.data(C.cheatpath+M.gameID.replace(/\.gba$/,'.cheat'));
                             if(cheat instanceof Uint8Array)T.$('.cheat_txt').value = new TextDecoder().decode(cheat);
                             else M.runaction('showMsg',[T.getLang('no cheat can load from local!')]);
                         }
@@ -628,15 +633,16 @@ class NengeController{
             var lines = code.split('\n')
             var ret = ''
             for (var i = 0; i < lines.length; i++) {
-                var line = lines[i].trim().replace(/ /g, '')
+                var line = lines[i].trim().replace(/ /g, '');
+                line = line.replace(':','');
                 if ((line.length != 16) && (line.length != 12)) {
-                    continue
+                    continue;
                 }
                 // Check if it's a hex string
-                if (line.match(/[^0-9A-F]/)) {
-                    continue
+                if (line.match(/[^0-9A-F:]/)) {
+                    continue;
                 }
-                ret += line + '\n'
+                ret += line + '\n';
             }
             return ret
         }
