@@ -79,7 +79,7 @@ var Module = new class {
         M.runaction('clearSaveBufState');
         M._emuResetCpu();
         M.isRunning = true;
-        M.emuLoop();
+        if(!this.looptime)M.emuLoop();
         return M.runaction('tryInitSound');
     }
     reloadRoom(gameID,u8){
@@ -87,7 +87,11 @@ var Module = new class {
         return Module.loadRoom(u8);
     }
     fpslen = 60;
-    frameCnt = 0;last128FrameTime = 0;lastFrameTime = 0;frameSkip = 0;lowLatencyMode = false;
+    frameCnt = 0;
+    //last128FrameTime = 0;
+    //lastFrameTime = 0;
+    //frameSkip = 0;
+    //lowLatencyMode = false;
     lastCheckedSaveState = 0;
     get fps() {
         return this.fpslen;
@@ -100,29 +104,24 @@ var Module = new class {
         return this.Controller.VKSTATUS;
     }
     emuLoop() {
-        if(this.loopTime){
-            cancelAnimationFrame(this.loopTime);
-            this.nowFrame = 0;
-            this.costFrame = 0;
-        };
-        this.loopTime = window.requestAnimationFrame(e=>{
-            this.emuRunFrame(e);
-            delete this.loopTime;
+        this.looptime = window.requestAnimationFrame(e=>{
+            this.Frametime = e;
             this.emuLoop();
         });
-        //this.loopTime = setInterval(() => this.emuRunFrame(), 1000 / this.fpslen);
+        //console.log(this.looptime,this.Frametime);
+        this.emuRunFrame(this.Frametime);
     }
     nowFrame = 0;
     costFrame = 0;
     emuRunFrame(e) {
-        let M = this, T = M.T;
+        let M = this, T = M.T,fps = this.fpslen;
         //M.nowFrame = e;
-        M.runaction('processGamepadInput');
         if (M.isRunning) {
             M.frameCnt++
             if (M.frameCnt % 60 == 0) {
                 M.runaction('checkSaveBufState');
             }
+            /*
             if (M.frameCnt % 128 == 0) {
                 if (M.last128FrameTime) {
                     var diff = performance.now() - M.last128FrameTime;
@@ -135,27 +134,38 @@ var Module = new class {
                 M.last128FrameTime = performance.now();
 
             }
+            */
+            if(document.visibilityState == 'hidden'){
+                fps = 60;
+            }
             if(!M.nowFrame){
                 M.nowFrame = e;
                 M._emuRunFrame(M.getVKState());
+                this.OutputCanvans();
             }else if(e){
                 M.costFrame = e - M.nowFrame;
-                let num = Math.round(this.fpslen/(1000/M.costFrame));
+                let num = Math.round(fps/(1000/M.costFrame));
                 if(num<1) return;
                 if(num>3)num=3;
                 for(var i=0;i<num;i++)M._emuRunFrame(M.getVKState());
+                this.OutputCanvans();
                 //M._emuRunFrame(M.getVKState());
             }else{
-                console.log(this.fpslen,e);
-            }
-            if (M.optScaleMode >= 2) {
-                if(M.gl)M.runaction('gpuDraw')
-            } else {
-                if(M.drawContext)M.drawContext.putImageData(M.idata, 0,0,0,0,M.canvas.width,M.canvas.height);
+                //console.log(fps,e);
+                M.nowFrame = 0;
+                return;
             }
             M.nowFrame = e;
         }else{
             M.nowFrame = e;
+        }
+    }
+    OutputCanvans(){
+        let M = this;
+        if (M.optScaleMode >= 2) {
+            if(M.gl)M.runaction('gpuDraw')
+        } else {
+            if(M.drawContext)M.drawContext.putImageData(M.idata, 0,0,0,0,M.canvas.width,M.canvas.height);
         }
     }
     optScaleMode = 0;
@@ -189,7 +199,7 @@ var Module = new class {
         //console.log(ptr, frames)
         if(!M.wasmAudioBuf)M.wasmAudioBuf = new Int16Array(M.HEAPU8.buffer).subarray(ptr / 2, ptr / 2 + 2048);
         var tail = (M.audioFifoHead + M.audioFifoCnt) % M.audioFifo0.length;
-        if (M.audioFifoCnt + M.frames >= M.audioFifo0.length) {
+        if (M.audioFifoCnt + frames >= M.audioFifo0.length) {
             //console.log('o', audioFifoCnt)
             return
         }
@@ -249,9 +259,6 @@ var Module = new class {
         async loadSRM(){
             let name = this.gameID.replace(/\.gba$/,'');
             return await  this.db.userdata.data("/userdata/saves/"+name+'.srm');
-        },
-        processGamepadInput() {
-
         },
         clearSaveBufState() {
             this.lastCheckedSaveState = 0;

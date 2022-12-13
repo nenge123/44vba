@@ -27,6 +27,9 @@ class NengeController{
         ["gamepadconnected","gamepaddisconnected"].forEach(v=>T.on(window,v,e=>{
             this.loadgamepad(e);
         }));
+        T.on(document,'visibilitychange',e=>{
+            console.log(document.visibilityState);
+        });
         let config = localStorage.getItem('vba-setting');
         if(config){
             config = JSON.parse(config);
