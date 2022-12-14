@@ -1,6 +1,6 @@
 const Nenge = new class NengeCores {
     version = 1;
-    DB_NAME = 'XINNO_BBS';
+    DB_NAME = 'XBBS';
     DB_STORE_MAP = {
         'data-js': { 'timestamp': false },
         'data-file': {},
@@ -8,7 +8,6 @@ const Nenge = new class NengeCores {
         'forumsicon': { 'timestamp': false },
         'document': { 'timestamp': false },
     };
-    LibPack = 'common_libjs.zip';
     Libzip = 'zip.min.js';
     LibStore = 'data-js';
     Encoding = 'GBK';
@@ -340,7 +339,7 @@ const Nenge = new class NengeCores {
         }
     }
     addJS(buf, cb, iscss) {
-        let re = false, script = document.createElement(!iscss ? 'script' : 'link'), func = success => {
+        let re = false, script = document.createElement(!iscss ? 'script' : 'link'), func = callback => {
             if (!/^(blob:)?https?:\/\//.test(buf) && !/(\.js$|\.css$)/.test(buf)) {
                 re = true;
                 buf = this.F.URL(buf, this.F.gettype(!iscss ? 'js' : 'css'));
@@ -354,7 +353,7 @@ const Nenge = new class NengeCores {
                 script.src = buf;
             }
             script.onload = e => {
-                success && success(e);
+                callback && callback(e);
                 if (re) window.URL.revokeObjectURL(buf);
                 buf = null;
             };
@@ -364,17 +363,21 @@ const Nenge = new class NengeCores {
         else return func(cb), script;
 
     };
-    async loadScript(js, version, replace) {
-        let T = this, F = T.F, url = /^(\/|https?:\/\/|static\/js\/|data\/)/.test(js) ? js : this.JSpath + js, data = await T.FetchItem({ url, 'store': T.LibStore, 'key': F.LibKey, 'mime': F.gettype('js'), 'version': version || T.version, 'type': replace ? 'text' : undefined });
-        replace && (data = replace(data));
+    async loadScript(js,ARG) {
+        ARG = ARG||{};
+        let T = this, F = T.F, url = /^(\/|https?:\/\/|static\/js\/|data\/)/.test(js) ? js : T.JSpath + js,
+        process = ARG.process&&(e=>ARG.process(`${T.getLang('installJS')}:${js} - ${e}`)),
+        version = ARG.version || T.version,
+        data = await T.FetchItem({ url, 'store':T.LibStore, 'key':F.LibKey,version,process});
         await T.addJS(data);
+        process = null;
         return data;
     }
     async loadLibjs(name) {
         return await this.addJS(await this.F.getLibjs(name));
     }
     unFile(u8, process, ARG) {
-        return this.F.unFile(u8, Object.assign({ process }, ARG));
+        return this.F.unFile(u8, Object.assign({ process }, ARG||{}));
     }
     is = new class NengeType {
         formdata = (obj) => new FormData(obj || undefined);
@@ -566,14 +569,14 @@ const Nenge = new class NengeCores {
             return fetch(url, data).catch(v => { console.log(v); throw v });
         }
         THEN = f => new Promise(f);
-        async unRAR(u8, ARG) {
-            let F = this, I = F.I, { process, password, src, filename } = ARG;
+        async unRAR(u8, ARG,src) {
+            let F = this, I = F.I, { process, password, filename } = ARG;
             if (I.blob(u8)) {
                 if (u8.name) filename = u8.name;
                 u8 = new Uint8Array(await u8.arrayBuffer());
             }
-            src = src || 'rar.js';
-            if (!F.LibUrl[src]) F.LibUrl[src] = F.URL(await F.getLibjs(src));
+            src = src || 'extractrar.zip';
+            if (!F.LibUrl[src]) F.LibUrl[src] = F.URL(await F.getLibjs(src,process));
             let url = F.LibUrl[src], worker = new Worker(url);
             return F.THEN(complete => {
                 let contents = {};
@@ -605,13 +608,12 @@ const Nenge = new class NengeCores {
 
         }
         async un7z(u8, ARG) {
-            ARG.src = '7z.js';
-            return this.unRAR(u8, ARG);
+            return this.unRAR(u8, ARG,'extract7z.zip');
         }
         async unZip(u8, ARG = {}) {
             let { process, password, packtext } = ARG, F = this, T = F.T;
-            if (T.Libzip == 'extractzip.min.js') { ARG.src = T.Libzip; return this.unRAR(u8, ARG); }
-            await F.ZipInitJS();
+            if (T.Libzip == 'extractzip.min.js')return this.unRAR(u8, ARG,T.Libzip);
+            if(!window.zip)await T.loadScript(T.Libzip,{process});
             let zipReader = new zip.ZipReader(F.I.blob(u8) ? new zip.BlobReader(u8) : new zip.Uint8ArrayReader(u8));
             let entries = await zipReader.getEntries({
                 filenameEncoding: T.Encoding,
@@ -657,13 +659,13 @@ const Nenge = new class NengeCores {
                 return F.I.blob(u8) ? new Uint8Array(u8.arrayBuffer()) : u8;
             }
         }
-        async ZipCreate(password) {
-            await this.ZipInitJS();
+        async ZipCreate(password,process) {
+            await this.ZipInitJS(process);
             return new zip.ZipWriter(new zip.Uint8ArrayWriter(), { password });
         }
-        async ZipInitJS() {
+        async ZipInitJS(process) {
             let F = this, T = F.T;
-            if (!window.zip) await T.loadLibjs(T.Libzip);
+            if (!window.zip) await T.loadLibjs(T.Libzip,{process});
             return true;
         }
         async ZipAddFile(files, password, ZipWriter, options, comment) {
@@ -678,6 +680,7 @@ const Nenge = new class NengeCores {
             if (I.str(ARG)) ARG.unMode = {
                 'unMode': ARG
             };
+            if(u8 instanceof Promise)u8 = await u8;
             ARG.packtext = ARG.packtext || '解压:';
             if (ARG.unMode && F[ARG.unMode]) return await F[ARG.unMode](u8, ARG);
             let action = null, u8Mime;
@@ -1045,7 +1048,8 @@ const Nenge = new class NengeCores {
             return await F.dbOpen(dbName, null, version, {
                 upgradeneeded(db) {
                     db.deleteObjectStore(tables);
-                }, success(db, resolve) {
+                },
+                success(db, resolve) {
                     F.close(db);
                     resolve('ok');
                 }
@@ -1116,20 +1120,27 @@ const Nenge = new class NengeCores {
                 return list;
             }
         };
-        async getLibjs(file) {
-            let F = this, T = F.T;
+        async getLibjs(jsfile,process) {
+            let F = this, T = F.T,file = jsfile.replace(/\.zip$/,'.js');
             if (F.Libjs[file]) return F.Libjs[file];
             let contents = await T.getStore(T.LibStore).data(F.LibKey + file, T.version);
             if (!contents) {
-                if (!window.zip) contents = await T.loadScript(T.Libzip);
+                if (/\.zip$/.test(jsfile)&&!window.zip) await T.loadScript(T.Libzip,{process});
                 if (file != T.Libzip) {
                     contents = await T.FetchItem({
-                        url: T.JSpath + T.LibPack, 'store': T.LibStore, 'key': F.LibKey, 'unpack': true, 'filename': file
+                        url: T.JSpath + jsfile,
+                        'store': T.LibStore,
+                        'key': F.LibKey,
+                        'unpack': true,
+                        'filename': file,
+                        'process':e=>{
+                            process&&process(`${T.getLang('installJS')}:${jsfile}`)
+                        }
                     });
                 }
             }
-            if (file == 'rar.js') {
-                let memurl = F.URL(await F.getLibjs('rar.mem'));
+            if (/rar\.js$/.test(file)) {
+                let memurl = F.URL(await F.getLibjs(file+'.mem'));
                 let rarurl = F.URL(contents);
                 contents = `var dataToPass=[],password,Readyfunc,isReady = new Promise(res=>Readyfunc=res);;self.Module={locateFile:()=>'` + memurl + `',monitorRunDependencies:function(t){0 == t && setTimeout(()=>Readyfunc(),100);},onRuntimeInitialized:function(){}};
                 importScripts('` + rarurl + `');let unrar=function(t,e){let n=readRARContent(t.map((function(t){return{name:t.name,content:new Uint8Array(t.content)}})),e,(function(t,e,n){postMessage({t:4,current:n,total:e,name:t})})),o=function(t){if("file"===t.type)postMessage({t:2,file:t.fullFileName,size:t.fileSize,data:t.fileContent});else{if("dir"!==t.type)throw"Unknown type";Object.keys(t.ls).forEach((function(e){o(t.ls[e])}))}};return o(n),postMessage({t:1}),n};onmessage=async (message)=>{if(message.data.contents)dataToPass.push({name:"test.rar",content:message.data.contents});if(message.data.password)password=message.data.password;isReady.then(e=>unrar(dataToPass,password||undefined)).catch(message=>{if(['Uncaught Missing password','Missing password'].includes(message))return postMessage({t:-1,message})});};`;

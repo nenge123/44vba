@@ -92,27 +92,26 @@ body {
         padding: .675rem;
     }
 }
-.welcome,.g-info{
-    background: #000;
+.g-info{
     position: fixed;
     z-index: 999;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
+    padding: 1vh 5vw;
+    overflow: hidden;
+    overflow-y: auto;
     color: #fff;
-    padding: calc(50% - 200px);
+    background: #000;
+    >p{
+        text-align: left;
+    }
+>.welcome{
     >p{
         text-align: center;
     }
 }
-.g-info{
-    padding: 1vh 5vw;
-    overflow: hidden;
-    overflow-y: auto;
-    >p{
-        text-align: left;
-    }
     li{
         margin-bottom: 15px;
     }
@@ -182,6 +181,10 @@ body {
             color: #fff;
             background: #24242408;
             outline: none;
+            &[data-key].active{
+                background-color: #ffffff45;
+                color: #ed0202;
+            }
         }
         .g-dp{
             position: absolute;

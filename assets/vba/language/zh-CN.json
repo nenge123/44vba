@@ -2,6 +2,8 @@
     "loading...":"加载中",
     "loading":"加载",
     "unpack":"解压",
+    "unpack status":"解压状态",
+    "Import ...":"导入中...",
     "Cores installed!":"核心已装载",
     "gl-shader":"webgl滤镜",
     "Run this Game":"打开游戏",
@@ -26,5 +28,10 @@
     "gamepad":"手柄",
     "keyname":"控键",
     "apply cheat":"应用金手指",
-    "load cheat":"重载金手指"
+    "load cheat":"重载金手指",
+    "Refresh Page":"刷新页面",
+    "This site is not associated with Nintendo in any way.Import your Homemade games. enter 'ESC' show Menu when you running!":"本站与任天堂无任何联系.这是一个用于自制游戏导入并模拟运行.电脑访问按下'ESC'键显示菜单.目前提供半速(低于会卡成PPT)到三倍快乐.更多更多功能请去<b>https://github.com/44670/44vba</b>提出ISSES,本站会稍后跟进.",
+    "last play":"最近玩的游戏",
+    "Cache Game File":"导入到浏览器的游戏",
+    "Smooth":"模糊"
 }

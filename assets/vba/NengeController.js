@@ -49,6 +49,7 @@ class NengeController{
             name:'B',
             pos:'xyab'
         },
+        /*
         'x':{
             key:3,
             name:'X',
@@ -59,6 +60,7 @@ class NengeController{
             name:'Y',
             pos:'xyab'
         },
+        */
         'up':{
             key:12,
             name:'↑',
@@ -133,6 +135,7 @@ class NengeController{
         'opencheat':'use cheat',
         'Filemanager':'File Manager',
         'keysetting':'Key setting',
+        'reload':'Refresh Page',
     }
     cheatpath = "/userdata/cheats/VBA Next/";
     action = {
@@ -235,6 +238,9 @@ class NengeController{
                 }
             });
         },
+        reload(){
+            location.reload();
+        },
         fps60(elm,menulist){
             menulist.$('.g-fps').value = 60;
             menulist.$('.g-status').innerHTML = 60;
@@ -290,11 +296,10 @@ class NengeController{
             C.upload(files=>{
                 Array.from(files).forEach(async file=>{
                     let u8 = new Uint8Array(await file.arrayBuffer());
-                    clearInterval(M.loopTime);
+                    M.isRunning = false;
                     M.wasmSaveBuf.set(u8.slice(0,131072));
                     M.runaction('clearSaveBufState');
                     M._emuResetCpu();
-                    M.emuLoop();
                     M.runaction('showMsg',[T.getLang('this saves is temp to load.<br>the local saves is not change!'),5000]);
 
                 });
@@ -324,8 +329,19 @@ class NengeController{
         },
         sendInputKey(touchlist,newlist){
             let C=this,T=C.T,I=C.I,Module = T.Module;
-            touchlist = touchlist.filter(v=>v&&!newlist.includes(v));
-            newlist = newlist.filter(v=>v);
+            //console.log(touchlist,newlist);
+            touchlist = touchlist.filter(v=>{
+                if(v){
+                    Nttr('button[data-key="'+v+'"]').active = false;
+                    return !newlist.includes(v);
+                }
+            });
+            newlist = newlist.filter(v=>{
+                if(v){
+                    Nttr('button[data-key="'+v+'"]').active = true;
+                }
+                return v;
+            });
             /*
             if(!C.keyMap){
                 let retroarchcfg = new TextDecoder().decode(Module.FS.readFile(Module.configPath));
@@ -391,7 +407,7 @@ class NengeController{
             let C =this,html="";
             ['x','y','a','b'].forEach(
                 (v,index)=>{
-                    html += C.runaction('getButton',['right',v]);
+                    C.button[v]&&(html += C.runaction('getButton',['right',v]));
                 }
             );
             return html;
@@ -491,7 +507,6 @@ class NengeController{
                 }
                 e.stopPropagation();
             },{passive:false}));
-            console.log(elm);
             let result = elm.$('.game-result');
             elm.click(async e=>{
                 if(elm.active) return;
@@ -502,7 +517,10 @@ class NengeController{
                         C.upload(async files=>{
                             await Promise.all(Array.from(files).map(async file=>{
                                 let u8 = new Uint8Array(await file.arrayBuffer()) ,filename = file.name;
-                                u8 = await T.unFile(u8);
+                                let selm = C.runaction('addStatusItem',[result,`${filename} ${T.getLang('Import ...')}`]);
+                                u8 = await T.unFile(u8,e=>{
+                                    selm.innerHTML = `${filename} ${T.getLang('unpack status')}: ${e}`;
+                                });
                                 if(u8 instanceof Uint8Array){
                                     C.runaction('addroomItem',[result,filename,u8])
                                 }else{
@@ -588,7 +606,11 @@ class NengeController{
                 }
             });
         },
-
+        addStatusItem(elm,txt){
+            let li = this.T.$ct('li',txt);
+            elm.appendChild(li);
+            return li;
+        },
         async addroomItem(elm,filename,contents){
             let C=this,M=C.Module,T=M.T,html="";
             if(contents){
@@ -605,7 +627,6 @@ class NengeController{
                 contents = null;
             }
             let li = T.$ct('li',`<span>${filename}</span><button data-game="${filename}">${T.getLang('Run this Game')}</button>`);
-            console.log(elm,li);
             elm.appendChild(li);
         },
         async Filemanager(){

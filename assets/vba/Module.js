@@ -26,12 +26,12 @@ var Module = new class {
         let M = this, T = M.T;
         M.canvas = T.$('canvas');
         T.lang = await T.FetchItem({ url: M.JSpath + 'language/' + T.language + '.json', 'type': 'json' });
-        let welm = T.$('.welcome');
-        if(welm)welm.innerHTML = `<p>44gba.zip</p><p class="status">${T.getLang('loading...')}</p>`;
+        let selm = M.runaction('addloadStatus',`44gba.zip : ${T.getLang('loading...')}</p>`)
+        //if(selm)welm.innerHTML = `<p>44gba.zip</p><p class="status">${T.getLang('loading...')}</p>`;
         let CacheFile = await T.FetchItem({
             url: M.JSpath + '44gba.zip', store: 'data-libjs', key: 'vba-core', version: M.version, unpack: true,
             process: e => {
-                if(welm)T.$('.welcome>.status').innerHTML = e;
+                if(selm)selm.innerHTML = `44gba.zip : ${e}</p>`;
             },
             packtext: T.getLang('unpack'),
         });
@@ -41,7 +41,6 @@ var Module = new class {
         CacheFile = null;
         await T.addJS(asmjs);
         //Nenge.once(document,'click',async e=>{Module.loadRoom(await Nenge.FetchItem('1.gba'));});
-
     }
     romFileName = "";
     async loadRoom(u8) {
@@ -189,8 +188,8 @@ var Module = new class {
         }
         */
         T.$('.welcome').remove();
-        T.$('.container .g-info').hidden = false;
         delete M.wasmBinary;
+        T.$('.infotips').innerHTML = T.getLang('This site is not associated with Nintendo in any way.Import your Homemade games. enter \'ESC\' show Menu when you running!');
         M.Controller.runaction('StartInfo');
     }
     writeAudio(ptr, frames) {
@@ -215,6 +214,14 @@ var Module = new class {
     }
     imgList = {};
     action = {
+        addloadStatus(txt){
+            let M=this,T=M.T,elm = T.$('.welcome');
+            if(elm){
+                let aelm =  T.$ct('div',txt);
+                elm.appendChild(aelm);
+                return aelm;
+            }
+        },
         showMsg(msg,t){
             let elm = Nttr('.g-showtxt');
             elm.html(msg);
@@ -289,14 +296,8 @@ var Module = new class {
                 M.optScaleMode = 0;
                 return;
             }
-            let welm = T.$('.welcome');
-            if(welm)welm.innerHTML = `<p>${T.getLang('Cores installed!')}</p><p class="status">${T.getLang('gl-shader')}:${T.getLang('loading...')}</p>`;
             let shaderFile = await T.FetchItem({
                 url: M.JSpath + 'gl_shader.zip', store: 'data-libjs', key: 'vba-glshader', version: M.version, unpack: true,
-                process: e => {
-                    if(welm)T.$('.welcome>.status').innerHTML = T.getLang('gl-shader')+':'+e;
-                },
-                packtext: T.getLang('unpack'),
             });
             gl.viewport(0, 0, width, height);
             // Create shader.
