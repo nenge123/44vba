@@ -20,6 +20,7 @@ var Module = new class {
             rooms:T.getStore('rooms'),
             libjs:T.getStore('data-libjs'),
         };
+        this.fps = 60;
         T.docload(() => this.loadCores());
     }
     async loadCores() {
@@ -85,7 +86,6 @@ var Module = new class {
         Module.gameID = gameID;
         return Module.loadRoom(u8);
     }
-    fpslen = 60;
     frameCnt = 0;
     //last128FrameTime = 0;
     //lastFrameTime = 0;
@@ -97,67 +97,19 @@ var Module = new class {
     }
     set fps(fps) {
         this.fpslen =  parseInt(fps);
+        this.fpspeed = 1000/this.fpslen;
         //if(this.isRunning)this.emuLoop();
     }
     getVKState() {
         return this.Controller.VKSTATUS;
     }
     emuLoop() {
-        this.looptime = window.requestAnimationFrame(e=>{
-            this.Frametime = e;
-            this.emuLoop();
-        });
-        //console.log(this.looptime,this.Frametime);
-        this.emuRunFrame(this.Frametime);
-    }
-    nowFrame = 0;
-    costFrame = 0;
-    emuRunFrame(e) {
-        let M = this, T = M.T,fps = this.fpslen;
-        //M.nowFrame = e;
-        if (M.isRunning) {
-            M.frameCnt++
-            if (M.frameCnt % 60 == 0) {
-                M.runaction('checkSaveBufState');
-            }
-            /*
-            if (M.frameCnt % 128 == 0) {
-                if (M.last128FrameTime) {
-                    var diff = performance.now() - M.last128FrameTime;
-                    var frameInMs = diff / 128;
-                    if (frameInMs > 0.001) {
-                        M.nowfps = 1000 / frameInMs
-                    }
-                    console.log('fps', M.nowfps,e);
-                }
-                M.last128FrameTime = performance.now();
-
-            }
-            */
-            if(document.visibilityState == 'hidden'){
-                fps = 60;
-            }
-            if(!M.nowFrame){
-                M.nowFrame = e;
-                M._emuRunFrame(M.getVKState());
-                this.OutputCanvans();
-            }else if(e){
-                M.costFrame = e - M.nowFrame;
-                let num = Math.round(fps/(1000/M.costFrame));
-                if(num<1) return;
-                if(num>3)num=3;
-                for(var i=0;i<num;i++)M._emuRunFrame(M.getVKState());
-                this.OutputCanvans();
-                //M._emuRunFrame(M.getVKState());
-            }else{
-                //console.log(fps,e);
-                M.nowFrame = 0;
-                return;
-            }
-            M.nowFrame = e;
-        }else{
-            M.nowFrame = e;
-        }
+       let M=this;
+       M.looptime = window.requestAnimationFrame(e=>{
+            M.Frametime = e;
+            M.emuLoop();
+       });
+       M.runaction('loopFrame',[M.Frametime]);
     }
     OutputCanvans(){
         let M = this;
@@ -214,6 +166,43 @@ var Module = new class {
     }
     imgList = {};
     action = {
+        loopFrame(e) {
+            let M = this, T = M.T,speed = M.fpspeed;
+            //M.nowFrame = e;
+            if (M.isRunning) {
+                M.frameCnt++
+                if (M.frameCnt % 60 == 0) {
+                    M.runaction('checkSaveBufState');
+                }
+                if(document.visibilityState == 'hidden'){
+                    speed = 1000/60;
+                }
+                if(!e){
+                    if(M.costFrame){
+                        return ;
+                        console.log(M.costFrame);
+                    }
+                    M.runaction('callFrame');
+                }else if(e>0){
+                    M.costFrame = (e - M.nowFrame)/speed;
+                    if(M.costFrame<=0.8){
+                        return;
+                    }
+                    let num = Math.round(M.costFrame);
+                    M.costFrame = 0;
+                    if(num>4)num=4;
+                    M.nowFrame = e;
+                    for(var i=0;i<num;i++)M.runaction('callFrame');
+                    //M._emuRunFrame(M.getVKState());
+                }
+                M.OutputCanvans();
+            }
+            return true;
+        },
+        callFrame(){
+            let M=this;
+            M._emuRunFrame(M.getVKState());
+        },
         addloadStatus(txt){
             let M=this,T=M.T,elm = T.$('.welcome');
             if(elm){
@@ -388,9 +377,12 @@ var Module = new class {
                 }
                 return
             }
-            while (M.audioFifoCnt < M.AUDIO_BLOCK_SIZE) {
-                //console.log('audio fifo underflow, running a new frame')
-                M.emuRunFrame();
+            if(M.costFrame)return;
+            else{
+                while (M.audioFifoCnt < M.AUDIO_BLOCK_SIZE) {
+                    //console.log('audio fifo underflow, running a new frame')
+                    M.runaction('loopFrame');
+                }
             }
 
             let copySize = M.AUDIO_BLOCK_SIZE;
