@@ -104,6 +104,9 @@ body {
     overflow-y: auto;
     color: #fff;
     background: #000;
+    >a{
+        color: #0089ff;
+    }
     >p{
         text-align: left;
     }
@@ -209,15 +212,15 @@ body {
         }
         .g-menulist{
             position: absolute;
-            left:10vw;
-            right:10vw;
-            height: 400px;
+            left:5vw;
+            right:5vw;
             z-index: 900;
             color: #fff;
             background: #101010;
             border-radius: 10px;
             border: 1px solid #ab9c9c;
             text-align: center;
+            padding: 20px;
             >h3{
                 margin: 0 auto 10px;
                 padding: 0px;
@@ -236,7 +239,7 @@ body {
                 padding: 0;
                 width: 80%;
                 >li{
-                    margin: 5px;
+                    margin: 8px;
                     >button{
                         font-size: 1rem;
                         font-weight: normal;
@@ -262,7 +265,7 @@ body {
             flex-grow: 1;
             >button:not([class~='g-menu']){
                 position: absolute;
-                z-index: 991;
+                z-index: 800;
             }
             .g-dp{
                 button:not([class~='key-left-null']){
@@ -459,14 +462,15 @@ body {
 .g-showtxt{
     position: fixed;
     z-index: 10000;
-    top:calc(50vh - 40px);
-    bottom:calc(50vh - 40px);
-    left:10vw;
-    right:10vw;
-    background-color: #ffffff;
-    color: #000;
-    border:  1px solid #6e6161;
+    top: calc(50vh - 200px);
+    left: 10vw;
+    right: 10vw;
+    background-color: #3db4ed;
+    color: #fff;
+    border: 1px solid #042238;
     border-radius: 10px;
+    box-shadow: 2px 2px 5px #0097ef;
+    padding: 20px;
     &:not([class~='active']){
         display: none;
     }

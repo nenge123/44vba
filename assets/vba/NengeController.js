@@ -134,7 +134,6 @@ class NengeController{
         'keysetting':'Key setting',
         'reload':'Refresh Page',
     }
-    cheatpath = "/userdata/cheats/VBA Next/";
     action = {
         BulidButton(){
             let C=this,T=C.T,I=C.I,Module = T.Module,BtnContent = Nttr('.game-controller'),leftContent = BtnContent.$('.g-left'),RightContent = BtnContent.$('.g-right'),lefthtml="",righthtml="";
@@ -284,21 +283,15 @@ class NengeController{
                 canvas.style.imageRendering = 'pixelated';
             }
         },
-        async exportSrm(){
-            let name = this.Module.gameID.replace(/\.gba$/,'.srm');
-            this.T.down(name,await this.Module.db.userdata.data("/userdata/saves/"+name));
+        exportSrm(){
+            return this.Module.exportSrm();
         },
         importSrm(){
             let C=this,T=C.T,I=C.I,M = T.Module;
             C.upload(files=>{
                 Array.from(files).forEach(async file=>{
-                    let u8 = new Uint8Array(await file.arrayBuffer());
-                    M.isRunning = false;
-                    M.wasmSaveBuf.set(u8.slice(0,131072));
-                    M.runaction('clearSaveBufState');
-                    M._emuResetCpu();
-                    M.runaction('showMsg',[T.getLang('this saves is temp to load.<br>the local saves is not change!'),5000]);
-
+                    M.runaction('loadSRM',new Uint8Array(await file.arrayBuffer()));
+                    file=null;
                 });
             },1)
         },
@@ -306,11 +299,11 @@ class NengeController{
             let C=this,M=C.Module,T=M.T,html="";
             T.$('.g-info').hidden = false;
             if(C.cheatTxt==undefined){
-                let u8ddata = await M.db.userdata.data(C.cheatpath+M.gameID.replace(/\.gba$/,'.cheat'));
+                let u8ddata = await M.runaction('loadCheat');
                 ///console.log(u8ddata);
                 if(u8ddata)C.cheatTxt = new TextDecoder().decode(u8ddata);
             }
-            html +=`<p><textarea class="cheat_txt">${C.cheatTxt||""}</textarea></p><p>Cheat code:\nGameshark: XXXXXXXXYYYYYYYY\nAction Replay: XXXXXXXX YYYY</p><p><button data-act="applycheat">${T.getLang('apply cheat')}</button> <button data-act="loadcheat">${T.getLang('load cheat')}</button> <button data-act="close">${T.getLang('close')}</button></p>`;
+            html +=`<p><textarea class="cheat_txt">${C.cheatTxt||""}</textarea></p><p>${T.getLang('Cheat code:\nGameshark: XXXXXXXXYYYYYYYY\nAction Replay: XXXXXXXX YYYY')}</p><p><button data-act="applycheat">${T.getLang('apply cheat')}</button> <button data-act="loadcheat">${T.getLang('load cheat')}</button> <button data-act="close">${T.getLang('close')}</button></p><div class="cheat-result"></div>`;
             T.$('.g-lastInfo').innerHTML = html;
 
         },
@@ -552,13 +545,13 @@ class NengeController{
                         T.$('.g-info').hidden = true;
                     }else if(act=="loadcheat"){
                         if(T.$('.cheat_txt')){
-                            let cheat = await M.db.userdata.data(C.cheatpath+M.gameID.replace(/\.gba$/,'.cheat'));
+                            let cheat = await M.runaction('loadCheat');
                             if(cheat instanceof Uint8Array)T.$('.cheat_txt').value = new TextDecoder().decode(cheat);
                             else M.runaction('showMsg',[T.getLang('no cheat can load from local!')]);
                         }
                     }else if(act=="applycheat"){
                         if(T.$('.cheat_txt')){
-                            let value = C.runaction('filterCheatCode',[T.$('.cheat_txt').value||""]);
+                            let value = T.$('.cheat_txt').value||"";
                             C.cheatTxt = value;
                             if(value){                                
                                 M.runaction('applyCheatCode',[value]);
@@ -646,23 +639,6 @@ class NengeController{
             }));
             html+='</ul>';
             T.$('.g-lastInfo').innerHTML = html;
-        },
-        filterCheatCode(code) {
-            var lines = code.split('\n')
-            var ret = ''
-            for (var i = 0; i < lines.length; i++) {
-                var line = lines[i].trim().replace(/ /g, '');
-                line = line.replace(':','');
-                if ((line.length != 16) && (line.length != 12)) {
-                    continue;
-                }
-                // Check if it's a hex string
-                if (line.match(/[^0-9A-F:]/)) {
-                    continue;
-                }
-                ret += line + '\n';
-            }
-            return ret
         }
     };
     gamePadKeyMap = {

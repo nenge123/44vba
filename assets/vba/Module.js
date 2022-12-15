@@ -23,10 +23,26 @@ var Module = new class {
         this.fps = 60;
         T.docload(() => this.loadCores());
     }
+    cheatErroTxt = "";
+    print(txt){
+        let M=Module,T=M.T;
+        if(M.cheatNowTxt){
+            if(txt=='GBA: Warning: Codes seem to be for a different game.'){
+                let elm = T.$('.cheat-result');
+                M.cheatErroTxt += M.cheatNowTxt;
+                if(elm)elm.innerHTML = `<h3>${T.getLang('cheat Erro')}</h3>${M.cheatErroTxt}`;
+                M.cheatNowTxt="";
+            }
+        }
+        console.log(txt);
+    }
+    printErr(txt){
+        console.log(txt);
+    }
     async loadCores() {
         let M = this, T = M.T;
         M.canvas = T.$('canvas');
-        T.lang = await T.FetchItem({ url: M.JSpath + 'language/' + T.language + '.json', 'type': 'json' });
+        T.lang = await T.FetchItem({ url: M.JSpath + 'language/' + T.language + '.json?t='+T.time, 'type': 'json' });
         let selm = M.runaction('addloadStatus',`44gba.zip : ${T.getLang('loading...')}</p>`)
         //if(selm)welm.innerHTML = `<p>44gba.zip</p><p class="status">${T.getLang('loading...')}</p>`;
         let CacheFile = await T.FetchItem({
@@ -37,13 +53,14 @@ var Module = new class {
             packtext: T.getLang('unpack'),
         });
         let asmjs = new TextDecoder().decode(CacheFile['44gba.js']);
-        asmjs = asmjs.replace('wasmReady()', 'Module.wasmReady()').replace('writeAudio(', 'Module.writeAudio(')
+        asmjs = asmjs.replace('wasmReady()', 'Module.wasmReady()').replace('writeAudio(', 'Module.writeAudio(').replace(/var\s?arguments_\s?=\s?\[\];/,'var arguments_ = ["-v"];');
         M.wasmBinary = CacheFile['44gba.wasm'];
         CacheFile = null;
         await T.addJS(asmjs);
         //Nenge.once(document,'click',async e=>{Module.loadRoom(await Nenge.FetchItem('1.gba'));});
     }
-    romFileName = "";
+    //romFileName = "";
+    srmLength = 128*1024;
     async loadRoom(u8) {
         let M = this,
             T = M.T,
@@ -74,7 +91,7 @@ var Module = new class {
         //wasmSaveBuf.set(data)
         let savebuf = await M.runaction('loadSRM');
         if(savebuf){
-            M.wasmSaveBuf.set(savebuf.slice(0,131072));
+            M.wasmSaveBuf.set(savebuf.slice(0,M.srmLength));
         }
         M.runaction('clearSaveBufState');
         M._emuResetCpu();
@@ -83,8 +100,8 @@ var Module = new class {
         return M.runaction('tryInitSound');
     }
     reloadRoom(gameID,u8){
-        Module.gameID = gameID;
-        return Module.loadRoom(u8);
+        this.gameID = gameID;
+        return this.loadRoom(u8);
     }
     frameCnt = 0;
     //last128FrameTime = 0;
@@ -99,6 +116,13 @@ var Module = new class {
         this.fpslen =  parseInt(fps);
         this.fpspeed = 1000/this.fpslen;
         //if(this.isRunning)this.emuLoop();
+    }
+    get gameID(){
+        return this.GameFullName;
+    }
+    set gameID(name){
+        this.GameFullName = name;
+        this.GameName = name.replace(/\.gba$/i,'');
     }
     getVKState() {
         return this.Controller.VKSTATUS;
@@ -124,11 +148,11 @@ var Module = new class {
         let M = this, T = M.T;
         if(!M.Controller)M.Controller = new NengeController(T);
         M.romBuffer = Module._emuGetSymbol(1);
-        var ptr = Module._emuGetSymbol(2);
-        M.wasmSaveBuf = Module.HEAPU8.subarray(ptr, ptr + 131072);
-        ptr = Module._emuGetSymbol(3);
+        M.SrmPtr = Module._emuGetSymbol(2);
+        M.wasmSaveBuf = Module.HEAPU8.subarray(M.SrmPtr,M.SrmPtr + M.srmLength);
+        M.ImgPtr = Module._emuGetSymbol(3);
         let canvas = M.canvas, width = canvas.width, height = canvas.height;
-        var imgFrameBuffer = new Uint8ClampedArray(Module.HEAPU8.buffer).subarray(ptr, ptr + 240 * 160 * 4);
+        var imgFrameBuffer = new Uint8ClampedArray(Module.HEAPU8.buffer).subarray(M.ImgPtr, M.ImgPtr + 240 * 160 * 4);
         M.idata = new ImageData(imgFrameBuffer, 240, 160);
         M.isWasmReady = true;
         await M.Controller.runaction('setShader',[M.optScaleMode]);
@@ -236,7 +260,7 @@ var Module = new class {
 
         },
         async saveSRM(){
-            let M = this, T = M.T,name = M.gameID.replace(/\.gba$/,'');
+            let M = this, T = M.T,name = M.GameName;
             M.runaction('showMsg',[T.getLang('Auto saving, please wait...'),80000]);
             M.canvas.toBlob(async blob=>{
                 await M.db.userdata.put("/userdata/screenshots/"+name+'.png',{
@@ -252,9 +276,35 @@ var Module = new class {
             });
             M.runaction('showMsg',[T.getLang('saves file is ok'),1000]);
         },
-        async loadSRM(){
-            let name = this.gameID.replace(/\.gba$/,'');
-            return await  this.db.userdata.data("/userdata/saves/"+name+'.srm');
+        async loadSRM(u8){
+            let M = this;
+            if(u8){
+                M.isRunning = false;
+                M.wasmSaveBuf.set(u8.slice(0,M.srmLength));
+                M.runaction('clearSaveBufState');
+                M._emuResetCpu();
+                M.runaction('showMsg',[T.getLang('this saves is temp to load.<br>the local saves is not change!'),5000]);
+                M.isRunning = true;
+            }else{
+                return await  M.db.userdata.data("/userdata/saves/"+M.GameName+'.srm');
+            }
+        },
+        async exportSrm(){
+            let M = this;
+            M.T.down(M.GameName,await M.db.userdata.data("/userdata/saves/"+M.GameName+'.srm'));
+        },
+        async loadCheat(){
+            let M=this;
+            return await M.db.userdata.data(`/userdata/cheats/VBA Next/${M.GameName}.cheat`);
+        },
+        async saveCheat(contents){
+            let M=this,T=M.T;
+            if(typeof contents == 'string')contents = new TextEncoder().encode(contents);
+            M.db.userdata.put('/userdata/cheats/VBA Next/'+M.GameName+'.cheat',{
+                contents,
+                mode: 33206,
+                timestamp:T.date
+            });
         },
         clearSaveBufState() {
             this.lastCheckedSaveState = 0;
@@ -396,31 +446,67 @@ var Module = new class {
                 M.audioFifoCnt--;
             }
         },
+        resetCheat(){
+            let M = this,T=M.T;
+            if(M.cheatAddList){
+                var ptrGBuf = M._emuGetSymbol(4);
+                M.HEAPU8.set(new Uint8Array(Array(0x1000).fill(0)),ptrGBuf);
+                M.cheatAddList.forEach(v=>M._emuAddCheat(v));
+            }
+        },
         applyCheatCode(cheatCode) {
             let M = this,T=M.T;
             var ptrGBuf = M._emuGetSymbol(4);
             var gbuf = M.HEAPU8.subarray(ptrGBuf, ptrGBuf + 0x1000);
             var lines = cheatCode.split('\n');
             var textEnc = new TextEncoder();
+            var linePtr = 0;
+            var CheatText = '';
+            M.cheatNowTxt = "";
             for (var i = 0; i < lines.length; i++) {
-                var line = lines[i].trim();
-                if (line.length == 0) {
+                var line = lines[i].trim().replace(/\:/g,' ').replace(/([0-9A-F]{8})([0-9A-F]{8})/ig,'$1 $2').replace(/([0-9A-F]{8})([0-9A-F]{4})/ig,'$1 $2');
+                if (line.length == 0 || /(#|-|\!)/.test(line.charAt(0))) {
                     continue;
                 }
+                let linespit = line.split(/\s/);
+                for(let k=0;k<linespit.length;){
+                    let first = linespit[k];
+                    let first2 = linespit[k+1];
+                    k+=2;
+                    if(first&&first2&&first.length==8&&(first2.length==4||first2.length==8)){
+                        //CheatText+= `${first} ${first2}\n`;
+                        if(first2.length==4)first = first.replace(/^02/,'82');
+                        let linetxt= `${first} ${first2}\x00`;
+                        M.cheatNowTxt += linetxt.replace('\x00','<br>')
+                        let cheatBuf = new TextEncoder().encode(linetxt);
+                        gbuf.set(cheatBuf,linePtr);
+                        //if(!M.cheatAddList)M.cheatAddList=[];
+                        //M.cheatAddList.push(ptrGBuf+linePtr);
+                        M._emuAddCheat(ptrGBuf+linePtr);
+                        M.cheatNowTxt = "";
+                        //linePtr = cheatBuf.length;
+                    }
+                }
+                /*
+                console.log(linespit);
                 if (line.length == 12) {
                     line = line.substr(0, 8) + ' ' + line.substr(8, 4);
                 }
                 var lineBuf = textEnc.encode(line);
-                console.log(lineBuf.length);
+                console.log(line,lineBuf.length);
                 gbuf.set(lineBuf);
                 gbuf[lineBuf.length] = 0;
-                M.db.userdata.put("/userdata/cheats/VBA Next/"+M.gameID.replace(/\.gba$/,'.cheat'),{
-                    contents:lineBuf,
-                    mode: 33206,
-                    timestamp:T.date
-                });
                 Module._emuAddCheat(ptrGBuf);
+            if(CheatText){
+                let cheatBuf = new TextEncoder().encode(CheatText.trim());
+                gbuf.set(cheatBuf);
+                gbuf[cheatBuf.length] = 0;
+                this._emuAddCheat(ptrGBuf);
+                console.log(CheatText.trim());
             }
+                */
+            };
+            M.runaction('saveCheat',[cheatCode]);
         }
     };
     upload(func,bool){
