@@ -556,7 +556,11 @@ class NengeController{
                     }else if(act=="downstore"){
                         let dbname = obj.getAttribute('data-db'),key = obj.getAttribute('data-key');
                         if(dbname==M.db.libjs.table)return M.runaction('showMsg',[T.getLang('this data cant download!')]);
-                        T.down(T.F.getname(key),await T.getStore(dbname).data(key));
+                        let downdata = await T.getStore(dbname).data(key);
+                        if(downdata instanceof Uint8Array) T.down(T.F.getname(key),downdata);
+                        else if(downdata){
+                            T.I.toArr(downdata).forEach(entry=>T.down(entry[0],entry[1]));
+                        }
                     }else if(act =="reRun"){
                         let dbname = obj.getAttribute('data-db'),key = obj.getAttribute('data-key');
                         M.reloadRoom(key,await T.getStore(dbname).data(key));

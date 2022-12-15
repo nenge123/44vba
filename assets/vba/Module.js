@@ -123,15 +123,27 @@ var Module = new class {
     }
     async FetchRoom(path){
         let M=this,T=M.T;
-        let selm = M.runaction('addloadStatus',`${path} : ${T.getLang('download...')}`),u8 = await T.FetchItem({url:path,store:M.db.rooms,process:e=>{
+        let selm = M.runaction('addloadStatus',`${path} : ${T.getLang('download...')}`),u8 = await T.FetchItem({url:path,store:M.db.rooms,unpack:true,process:e=>{
             selm.innerHTML = `${path} : ${e}`;
         }});
         selm.innerHTML = `${path} : ${T.getLang('compelte...')}`;
         this.reloadRoom(T.F.getname(path),u8);
     }
     reloadRoom(gameID,u8){
-        this.gameID = gameID;
-        return this.loadRoom(u8);
+        if(u8 instanceof Uint8Array){            
+            this.gameID = gameID;
+            return this.loadRoom(u8);
+        }else if(u8){
+            let newlist = Object.entries(u8);
+            for(let i=0;i<newlist.length;i++){
+                if((/\.gba/i).test(newlist[i][0])){
+                    this.reloadRoom(newlist[i][0],newlist[i][1]);       
+                    this.gameID = newlist[i][0];
+                    this.loadRoom(newlist[i][1]);
+                }
+            }
+            newlist = null;
+        }
     }
     frameCnt = 0;
     //last128FrameTime = 0;
