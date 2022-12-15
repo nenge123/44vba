@@ -365,13 +365,25 @@ const Nenge = new class NengeCores {
     };
     async loadScript(js,ARG) {
         ARG = ARG||{};
-        let T = this, F = T.F, url = /^(\/|https?:\/\/|static\/js\/|data\/)/.test(js) ? js : T.JSpath + js,
+        let T = this, F = T.F, url = /^(\/|https?:\/\/|static\/js\/|data\/|assets)/.test(js) ? js : T.JSpath + js,
         process = ARG.process&&(e=>ARG.process(`${T.getLang('installJS')}:${js} - ${e}`)),
         version = ARG.version || T.version,
         data = await T.FetchItem({ url, 'store':T.LibStore, 'key':F.LibKey,version,process});
         await T.addJS(data);
         process = null;
         return data;
+    }
+    async getScript(js,ARG){
+        ARG = ARG||{};
+        let T = this, F = T.F, url = /^(\/|https?:\/\/|static\/js\/|data\/|assets)/.test(js) ? js : T.JSpath + js;
+        ARG.type = 'text';
+        ARG.url = url;
+        let data = await T.FetchItem(ARG);
+        if(ARG.replaceJs)data = ARG.replaceJs(data);
+        return data;
+    }
+    async addScript(js,ARG){
+        return await T.addJS(await T.getScript(js,ARG));
     }
     async loadLibjs(name) {
         return await this.addJS(await this.F.getLibjs(name));
@@ -1395,6 +1407,10 @@ const Nttr = (obj) => {
         }
         addClass(str) {
             this.cList.add(str);
+            return this;
+        }
+        removeClass(str) {
+            this.cList.remove(str);
             return this;
         }
         addChild(obj) {

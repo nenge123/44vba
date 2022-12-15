@@ -1,7 +1,6 @@
 var Module = new class {
-    constructor(T) {
+    constructor(T,elm) {
         let I = T.I;
-        T.LibPack = 'common_libjs.zip';
         T.DB_NAME = '44GBA';
         T.LibStore = 'data-libjs';
         T.DB_STORE_MAP = {
@@ -13,6 +12,9 @@ var Module = new class {
         I.defines(this, { T, I }, 1);
         I.defines(T, {Module:this}, 1);
         this.JSpath = T.JSpath.split('/').slice(0, -2).join('/') + '/vba/';
+        if(elm&&elm.JSpath){
+            this.JSpath = elm.JSpath;
+        }
         this.version = 1;
         this.runaction = T.runaction;
         this.db = {
@@ -21,14 +23,26 @@ var Module = new class {
             libjs:T.getStore('data-libjs'),
         };
         this.fps = 60;
-        T.docload(() => this.loadCores());
+        T.docload(async () =>{
+            this.emuElm = Nttr(T.$('.gbaemu',elm));
+            this.loadCores()
+        });
+    }
+    $(str){
+        return this.emuElm.$(str);
+    }
+    $$(str){
+        return this.emuElm.$$(str);
+    }
+    Nttr(str){
+        return Nttr(this.$(str));
     }
     cheatErroTxt = "";
     print(txt){
         let M=Module,T=M.T;
         if(M.cheatNowTxt){
             if(txt=='GBA: Warning: Codes seem to be for a different game.'){
-                let elm = T.$('.cheat-result');
+                let elm = M.$('.cheat-result');
                 M.cheatErroTxt += M.cheatNowTxt;
                 if(elm)elm.innerHTML = `<h3>${T.getLang('cheat Erro')}</h3>${M.cheatErroTxt}`;
                 M.cheatNowTxt="";
@@ -41,22 +55,30 @@ var Module = new class {
     }
     async loadCores() {
         let M = this, T = M.T;
-        M.canvas = T.$('canvas');
+        M.runaction('setNavMenu');
+        M.canvas = M.$('canvas');
+        //下载语言包
         T.lang = await T.FetchItem({ url: M.JSpath + 'language/' + T.language + '.json?t='+T.time, 'type': 'json' });
-        let selm = M.runaction('addloadStatus',`44gba.zip : ${T.getLang('loading...')}</p>`)
+        //非测试模式应该为 缓存加载模式,强制更新添加version参数
+        /**
+         * T.lang = await T.FetchItem({ url: M.JSpath + 'language/' + T.language + '.json?t='+T.time, 'type': 'json',store:M.db.libjs});
+         */
+        let selm = M.runaction('addloadStatus',`44gba.zip : ${T.getLang('loading...')}`)
         //if(selm)welm.innerHTML = `<p>44gba.zip</p><p class="status">${T.getLang('loading...')}</p>`;
         let CacheFile = await T.FetchItem({
             url: M.JSpath + '44gba.zip', store: 'data-libjs', key: 'vba-core', version: M.version, unpack: true,
             process: e => {
-                if(selm)selm.innerHTML = `44gba.zip : ${e}</p>`;
+                if(selm)selm.innerHTML = `44gba.zip : ${e}`;
             },
             packtext: T.getLang('unpack'),
         });
+        selm.innerHTML = `44gba.zip : ${T.getLang('Ready!')}`;
         let asmjs = new TextDecoder().decode(CacheFile['44gba.js']);
         asmjs = asmjs.replace('wasmReady()', 'Module.wasmReady()').replace('writeAudio(', 'Module.writeAudio(').replace(/var\s?arguments_\s?=\s?\[\];/,'var arguments_ = ["-v"];');
         M.wasmBinary = CacheFile['44gba.wasm'];
         CacheFile = null;
-        await T.addJS(asmjs);
+        (new Function('Module',asmjs))(M);
+        //await T.addJS(asmjs);
         //Nenge.once(document,'click',async e=>{Module.loadRoom(await Nenge.FetchItem('1.gba'));});
     }
     //romFileName = "";
@@ -83,7 +105,7 @@ var Module = new class {
         M.gameID = gameID;
         console.log('gameID', gameID);
         */
-       let startInfo = Nttr('.g-info');
+       let startInfo = M.Nttr('.gbaemu-startinfo');
        if(startInfo)startInfo.hidden=true;
        localStorage.setItem('last-game',Module.gameID);
         M.HEAPU8.set(u8, M.romBuffer);
@@ -98,6 +120,14 @@ var Module = new class {
         M.isRunning = true;
         if(!this.looptime)M.emuLoop();
         return M.runaction('tryInitSound');
+    }
+    async FetchRoom(path){
+        let M=this,T=M.T;
+        let selm = M.runaction('addloadStatus',`${path} : ${T.getLang('download...')}`),u8 = await T.FetchItem({url:path,store:M.db.rooms,process:e=>{
+            selm.innerHTML = `${path} : ${e}`;
+        }});
+        selm.innerHTML = `${path} : ${T.getLang('compelte...')}`;
+        this.reloadRoom(T.F.getname(path),u8);
     }
     reloadRoom(gameID,u8){
         this.gameID = gameID;
@@ -123,6 +153,7 @@ var Module = new class {
     set gameID(name){
         this.GameFullName = name;
         this.GameName = name.replace(/\.gba$/i,'');
+        if(this.$('.gba-title'))this.$('.gba-title').innerHTML = name;
     }
     getVKState() {
         return this.Controller.VKSTATUS;
@@ -146,7 +177,7 @@ var Module = new class {
     optScaleMode = 0;
     async wasmReady() {
         let M = this, T = M.T;
-        if(!M.Controller)M.Controller = new NengeController(T);
+        if(!M.Controller)M.Controller = new NengeController(M);
         M.romBuffer = Module._emuGetSymbol(1);
         M.SrmPtr = Module._emuGetSymbol(2);
         M.wasmSaveBuf = Module.HEAPU8.subarray(M.SrmPtr,M.SrmPtr + M.srmLength);
@@ -156,6 +187,10 @@ var Module = new class {
         M.idata = new ImageData(imgFrameBuffer, 240, 160);
         M.isWasmReady = true;
         await M.Controller.runaction('setShader',[M.optScaleMode]);
+        if(M.StartVBA){
+            M.Controller.runaction('setInfoEvent',[M.Nttr('.g-lastInfo')]);
+            return M.StartVBA();
+        }
         /*
         if (M.optScaleMode >= 2) {
             await M.runaction('gpuInit');
@@ -163,9 +198,9 @@ var Module = new class {
             M.drawContext = canvas.getContext('2d');
         }
         */
-        T.$('.welcome').remove();
+        M.$('.welcome').remove();
         delete M.wasmBinary;
-        T.$('.infotips').innerHTML = T.getLang('This site is not associated with Nintendo in any way.Import your Homemade games. enter \'ESC\' show Menu when you running!');
+        if(M.$('.infotips'))M.$('.infotips').innerHTML = T.getLang('This site is not associated with Nintendo in any way.Import your Homemade games. enter \'ESC\' show Menu when you running!');
         M.Controller.runaction('StartInfo');
     }
     writeAudio(ptr, frames) {
@@ -228,7 +263,7 @@ var Module = new class {
             M._emuRunFrame(M.getVKState());
         },
         addloadStatus(txt){
-            let M=this,T=M.T,elm = T.$('.welcome');
+            let M=this,T=M.T,elm = M.$('.welcome');
             if(elm){
                 let aelm =  T.$ct('div',txt);
                 elm.appendChild(aelm);
@@ -236,11 +271,11 @@ var Module = new class {
             }
         },
         showMsg(msg,t){
-            let elm = Nttr('.g-showtxt');
+            let M=this,elm = M.Nttr('.g-showtxt');
             elm.html(msg);
             elm.active=true;
-            if(this.msgTime!=undefined)clearTimeout(this.msgTime);
-            this.msgTime = setTimeout(()=>{
+            if(M.msgTime!=undefined)clearTimeout(M.msgTime);
+            M.msgTime = setTimeout(()=>{
                 elm.active = false;
             },t||2000);
             
@@ -277,7 +312,7 @@ var Module = new class {
             M.runaction('showMsg',[T.getLang('saves file is ok'),1000]);
         },
         async loadSRM(u8){
-            let M = this;
+            let M = this,T=M.T;
             if(u8){
                 M.isRunning = false;
                 M.wasmSaveBuf.set(u8.slice(0,M.srmLength));
@@ -290,8 +325,11 @@ var Module = new class {
             }
         },
         async exportSrm(){
-            let M = this;
-            M.T.down(M.GameName,await M.db.userdata.data("/userdata/saves/"+M.GameName+'.srm'));
+            let M = this,srmname = M.GameName+'.srm';
+            let u8 = await M.db.userdata.data("/userdata/saves/"+srmname);
+            if(u8)M.T.down(srmname,u8);
+            else M.runaction('showMsg',[M.T.getLang('no saves file!')]);;
+            u8=null;
         },
         async loadCheat(){
             let M=this;
@@ -463,6 +501,7 @@ var Module = new class {
             var linePtr = 0;
             var CheatText = '';
             M.cheatNowTxt = "";
+            let checklist = 0;
             for (var i = 0; i < lines.length; i++) {
                 var line = lines[i].trim().replace(/\:/g,' ').replace(/([0-9A-F]{8})([0-9A-F]{8})/ig,'$1 $2').replace(/([0-9A-F]{8})([0-9A-F]{4})/ig,'$1 $2');
                 if (line.length == 0 || /(#|-|\!)/.test(line.charAt(0))) {
@@ -484,6 +523,7 @@ var Module = new class {
                         //M.cheatAddList.push(ptrGBuf+linePtr);
                         M._emuAddCheat(ptrGBuf+linePtr);
                         M.cheatNowTxt = "";
+                        checklist++;
                         //linePtr = cheatBuf.length;
                     }
                 }
@@ -507,6 +547,25 @@ var Module = new class {
                 */
             };
             M.runaction('saveCheat',[cheatCode]);
+            return checklist;
+        },
+        setNavMenu(){
+            let M=this,T=M.T,menubtn = M.Nttr('.gba-menubtn');
+            if(menubtn){
+                menubtn.click(e=>{
+                    let active = menubtn.active;
+                    menubtn.active = !active;
+                    M.emuElm.active = !active;
+                });
+            }
+            let downbtn = M.Nttr('.gba-downbtn');
+            if(downbtn){
+                downbtn.click(e=>{
+                    if(M.gameID){
+                        T.down(M.gameID,M.db.rooms.data(M.gameID));
+                    }
+                });
+            }
         }
     };
     upload(func,bool){

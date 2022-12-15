@@ -40,5 +40,7 @@
     "saves file is ok":"存档已经保存至本地!",
     "no cheat can load from local!":"你并没有在本地保存过金手指",
     "char cant more than 900byte!":"不要超过900个字符",
-    "cheat is apply and save!":"金手指已载入!"
+    "cheat is apply and save!":"金手指已载入!",
+    "no cheat apply!":"没有任何金手指载入!",
+    "no saves file!":"没找到存档文件!"
 }

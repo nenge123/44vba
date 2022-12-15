@@ -1,8 +1,8 @@
 class NengeController{
-    constructor(T){
-        let C=this,I = T.I,Module=T.Module;
-        I.defines(this,{T,I,Module},1);
-        Module.canvas&&(Module.canvas.hidden = false);
+    constructor(M){
+        let C=this,T = M.T,I = T.I;
+        I.defines(this,{T,I,M},1);
+        M.canvas&&(M.canvas.hidden = false);
         this.runaction = T.runaction;;
         this.runaction('BulidButton');
         ['keydown','keyup'].forEach(v=>{
@@ -16,9 +16,9 @@ class NengeController{
                         delete C.VKDATA[C.keyList[index]];
                     }
                     return T.stopProp(e);
-                }else if(type=='keyup'&&e.code=='Escape'&&Module.isRunning){
-                    T.$('.g-info').hidden = true;
-                    Nttr('.game-controller .g-menu').click();
+                }else if(type=='keyup'&&e.code=='Escape'&&M.isRunning!=undefined){
+                    M.$('.gbaemu-startinfo').hidden = true;
+                    M.Nttr('.g-menu').click();
                     return T.stopProp(e);
                 }
 
@@ -136,7 +136,9 @@ class NengeController{
     }
     action = {
         BulidButton(){
-            let C=this,T=C.T,I=C.I,Module = T.Module,BtnContent = Nttr('.game-controller'),leftContent = BtnContent.$('.g-left'),RightContent = BtnContent.$('.g-right'),lefthtml="",righthtml="";
+            let C=this,T=C.T,I=C.I,M = C.M,BtnContent = M.Nttr('.user-controller');
+            BtnContent.html(`<div class="g-left"></div><div class="g-right"></div><div class="g-menulist" hidden></div>`);
+            let leftContent = BtnContent.$('.g-left'),RightContent = BtnContent.$('.g-right'),lefthtml="",righthtml="";
             I.toArr(C.button,entry=>{
                 let [btn,info] = entry;
                 if(info.pos=='left'){
@@ -153,13 +155,13 @@ class NengeController{
             RightContent.innerHTML = righthtml;
             let touchlist = [];
             T.stopGesture(BtnContent.obj);
-            T.stopGesture(Module.canvas);
+            T.stopGesture(M.canvas);
             BtnContent.on('contextmenu', e => T.stopProp(e));
             ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(
                 evt => {
                     BtnContent.on(evt, e => {
                         let newlist = [];
-                        Module.runaction('tryInitSound');
+                        M.runaction('tryInitSound');
                         if (e.type == 'touchstart') {
                             newlist = touchlist.concat(C.runaction('getButtonKey',[e.target]));
                         } else if (e.touches) {
@@ -172,8 +174,8 @@ class NengeController{
                         }
                         if (newlist.join() != touchlist) {
                             C.runaction('sendInputKey',[touchlist,newlist]);
-                            //Module.inputUp(touchlist);
-                            //Module.inputDown(newlist);
+                            //M.inputUp(touchlist);
+                            //M.inputDown(newlist);
                             touchlist = newlist;
                             //console.log(touchlist);
                         }
@@ -183,7 +185,28 @@ class NengeController{
                     });
                 }
             );
-            let menulist = Nttr('.game-controller .g-menulist'),menubtn = Nttr('.game-controller .g-menu');
+            if(!T.I.mobile){
+                ['pointerup', 'pointerdown'].forEach(evt=>{
+                    BtnContent.on(evt, e => {
+                        let newlist = [];
+                        M.runaction('tryInitSound');
+                        if(e.type=='pointerdown'){
+                            newlist = [C.runaction('getButtonKey',[e.target])];
+                        }else{
+                            touchlist = [C.runaction('getButtonKey',[e.target])];
+                        }
+                        if (newlist.join() != touchlist) {
+                            C.runaction('sendInputKey',[touchlist,newlist]);
+                            //M.inputUp(touchlist);
+                            //M.inputDown(newlist);
+                            touchlist = newlist;
+                            //console.log(touchlist);
+                        }
+                        //T.stopEvent(e);;
+                    })
+                })
+            }
+            let menulist = M.Nttr('.user-controller .g-menulist'),menubtn = M.Nttr('.user-controller .g-menu');
             menubtn.click(e=>{
                 let active = menulist.hidden;
                 menubtn.active = active;
@@ -191,15 +214,15 @@ class NengeController{
                 if(e.stopPropagation)return e.stopPropagation();
             },'pointerup',{passive:false});
             C.runaction('BulidMenu',[menulist]);
-            //Nttr('.game-controller')
+            //M.Nttr('.user-controller')
             //400x400
         },
         CallMenu(elm){
 
         },
         BulidMenu(menulist){
-            let C=this,T=C.T,I=C.I,Module = T.Module,
-                html=`<h3>FPS:<span class="g-status">${Module.fps}</span></h3><label><input class="g-fps" type="range" min="29" max="180" value="${Module.fps}"></label><ul>`;
+            let C=this,T=C.T,I=C.I,M = C.M,
+                html=`<h3>FPS:<span class="g-status">${M.fps}</span></h3><label><input class="gba-fps-input" type="range" min="29" max="180" value="${M.fps}"></label><ul>`;
             I.toArr(C.MenuList,entry=>{
                 html += `<li><button type="button" class="g-btn g-blue" data-act="${entry[0]}">${T.getLang(entry[1])}</button>`;
             });
@@ -212,12 +235,12 @@ class NengeController{
             )
             html+='</ul>';
             menulist.html(html);
-            Nttr(menulist.$('.g-fps')).on('change',e=>{
+            M.Nttr('.gba-fps-input').on('change',e=>{
                 let inp = e.target,v=inp.value;
                 menulist.$('.g-status').innerHTML = v;
-                Module.fps = parseInt(v);
+                M.fps = parseInt(v);
             });
-            ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(v=>Nttr(menulist.$('.g-fps')).on(v,e=>{
+            ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(v=>M.Nttr('.gba-fps-input').on(v,e=>{
                 e.stopPropagation();
             },{
                 passive: true
@@ -228,7 +251,7 @@ class NengeController{
                     let act = elm.getAttribute('data-act');
                     if(act){
                         C.runaction(act,[elm,menulist]);
-                        Nttr('.game-controller .g-menu').click();
+                        M.Nttr('.user-controller .g-menu').click();
                         return T.stopProp(e);
                     }
                 }
@@ -238,17 +261,17 @@ class NengeController{
             location.reload();
         },
         fps60(elm,menulist){
-            menulist.$('.g-fps').value = 60;
+            menulist.$('.gba-fps-input').value = 60;
             menulist.$('.g-status').innerHTML = 60;
-            this.Module.fps = 60;
+            this.M.fps = 60;
         },
         async replaceCanvas(str){
-            let C=this,M=C.Module,newcanvas = M.T.$ce('canvas');
-            newcanvas.id = Module.canvas.id;
+            let C=this,M=C.M,newcanvas = M.T.$ce('canvas');
+            newcanvas.id = M.canvas.id;
             newcanvas.width = 240;
             newcanvas.height = 160;
-            let old = Module.canvas.parentNode.replaceChild(
-                newcanvas,Module.canvas
+            let old = M.canvas.parentNode.replaceChild(
+                newcanvas,M.canvas
             );
             M.drawContext = null;
             M.gl = null;
@@ -257,11 +280,11 @@ class NengeController{
                 M.drawContext = M.canvas.getContext('2d');}
             else await M.runaction('gpuInit');
             old.remove();
-            return Module.canvas;
+            return M.canvas;
             
         },
         async setShader(elm){
-            let C=this,M = C.Module,canvas = M.canvas;
+            let C=this,M = C.M,canvas = M.canvas;
             let optScaleMode = elm instanceof Element? parseInt(elm.getAttribute('data-value')):elm;
             if(M.optScaleMode!==optScaleMode){
                 if(optScaleMode>=2&&M.optScaleMode<2){
@@ -284,10 +307,10 @@ class NengeController{
             }
         },
         exportSrm(){
-            return this.Module.exportSrm();
+            return this.M.runaction('exportSrm');
         },
         importSrm(){
-            let C=this,T=C.T,I=C.I,M = T.Module;
+            let C=this,T=C.T,I=C.I,M = C.M;
             C.upload(files=>{
                 Array.from(files).forEach(async file=>{
                     M.runaction('loadSRM',new Uint8Array(await file.arrayBuffer()));
@@ -296,45 +319,45 @@ class NengeController{
             },1)
         },
         async opencheat(){
-            let C=this,M=C.Module,T=M.T,html="";
-            T.$('.g-info').hidden = false;
+            let C=this,M=C.M,T=M.T,html="";
+            M.$('.gbaemu-startinfo').hidden = false;
             if(C.cheatTxt==undefined){
                 let u8ddata = await M.runaction('loadCheat');
                 ///console.log(u8ddata);
                 if(u8ddata)C.cheatTxt = new TextDecoder().decode(u8ddata);
             }
             html +=`<p><textarea class="cheat_txt">${C.cheatTxt||""}</textarea></p><p>${T.getLang('Cheat code:\nGameshark: XXXXXXXXYYYYYYYY\nAction Replay: XXXXXXXX YYYY')}</p><p><button data-act="applycheat">${T.getLang('apply cheat')}</button> <button data-act="loadcheat">${T.getLang('load cheat')}</button> <button data-act="close">${T.getLang('close')}</button></p><div class="cheat-result"></div>`;
-            T.$('.g-lastInfo').innerHTML = html;
+            M.$('.g-lastInfo').innerHTML = html;
 
         },
         async keysetting(){
-            let C=this,M=C.Module,T=M.T,html="";
-            T.$('.g-info').hidden = false;
+            let C=this,M=C.M,T=M.T,html="";
+            M.$('.gbaemu-startinfo').hidden = false;
             html +=`<table class="g-keysetting"><tr><td>${T.getLang('keyname')}</td><td>${T.getLang('Keyboard')}</td><td>${T.getLang('gamepad')}</td></tr>`;
             C.keyList.forEach((v,index)=>{
                 html+=`<tr><th>${v}</th><td><input type="text" data-act="Keyboard" value="${C.keymap[index]}"></td><td><input type="text" data-act="gamepad" data-padid="${v}" value="${C.gamePadKeyMap[v]}"></td></tr>`;
             });
             html+=`</table><p><button data-act="applykey">${T.getLang('apply setting')}</button><button data-act="clearkey">${T.getLang('clear setting')}</button><button data-act="close">${T.getLang('close')}</button></p>`;
-            T.$('.g-lastInfo').innerHTML = html;
+            M.$('.g-lastInfo').innerHTML = html;
         },
         sendInputKey(touchlist,newlist){
-            let C=this,T=C.T,I=C.I,Module = T.Module;
+            let C=this,T=C.T,I=C.I,M = C.M;
             //console.log(touchlist,newlist);
             touchlist = touchlist.filter(v=>{
                 if(v){
-                    Nttr('button[data-key="'+v+'"]').active = false;
+                    M.Nttr('button[data-key="'+v+'"]').active = false;
                     return !newlist.includes(v);
                 }
             });
             newlist = newlist.filter(v=>{
                 if(v){
-                    Nttr('button[data-key="'+v+'"]').active = true;
+                    M.Nttr('button[data-key="'+v+'"]').active = true;
                 }
                 return v;
             });
             /*
             if(!C.keyMap){
-                let retroarchcfg = new TextDecoder().decode(Module.FS.readFile(Module.configPath));
+                let retroarchcfg = new TextDecoder().decode(M.FS.readFile(M.configPath));
                 C.keyMap = {};
                 retroarchcfg.split('\n').forEach(v=>{
                     let arr = v.match(/^(\w+)\s=\s("|')?(.+?)("|')?$/);
@@ -356,7 +379,7 @@ class NengeController{
             
         },
         EnterKey(keylist,type){
-            let C=this,T=C.T,I=C.I,Module = T.Module;
+            let C=this,T=C.T,I=C.I,M = C.M;
             keylist.forEach(
                     v=>{
                         if(type){
@@ -416,35 +439,35 @@ class NengeController{
             console.log(width,height);
         },
         ReSizeCanvas(wh){
-            let C = this,T=C.T,I=C.I,Module = C.Module;  
+            let C = this,T=C.T,I=C.I,M = C.M;  
             if (wh) {
                 [C.width, C.height] = wh.map(v=>parseInt(v));
                 C.AspectRatio = C.width / C.height;
             }
-            let opt = Nttr('.g-game-ui').getBoundingClientRect(),QualityHeight = C.Quality||720,AspectRatio = opt.width / opt.height;
+            let opt = M.Nttr('.g-game-ui').getBoundingClientRect(),QualityHeight = C.Quality||720,AspectRatio = opt.width / opt.height;
             if(I.mobile){
                 if(C.AspectRatio){
                     if (typeof window.orientation != "undefined" && window.orientation != 0) {
-                        Nttr('.game-controller').css = "";
+                        M.Nttr('.user-controller').css = "";
                     }else{
                         AspectRatio = C.AspectRatio;
                         let mt=0,h=opt.height - opt.width/AspectRatio-20,height = Math.min(h,400);
                         if(h-50>height){
                             mt = h-50-height;
                         }
-                        Nttr('.game-controller').css = 'height:'+height+'px;margin-top:'+mt+'px';
+                        M.Nttr('.user-controller').css = 'height:'+height+'px;margin-top:'+mt+'px';
                     }
-                    Module.setCanvasSize(QualityHeight*AspectRatio,QualityHeight);
-                    C.runaction('ReSizeCtrl',[opt,Module.canvas.getBoundingClientRect().height]);
+                    M.setCanvasSize(QualityHeight*AspectRatio,QualityHeight);
+                    C.runaction('ReSizeCtrl',[opt,M.canvas.getBoundingClientRect().height]);
                 }
             }else{
                 let p = opt.height > QualityHeight ? opt.height:QualityHeight;
-                Module.setCanvasSize(p*AspectRatio,p);
+                M.setCanvasSize(p*AspectRatio,p);
             }
         },
              
         async StartInfo(){
-            let C=this,M=C.Module,T=M.T,lastgame = localStorage.getItem('last-game'),elm =Nttr('.g-lastInfo'),html="";
+            let C=this,M=C.M,T=M.T,lastgame = localStorage.getItem('last-game'),elm =M.Nttr('.g-lastInfo'),html="";
             if(lastgame){
                 let img = await M.db.userdata.data("/userdata/screenshots/"+lastgame.replace(/\.gba/,'.png'));
                 if(img)M.imgList[lastgame] = T.F.URL(img,{type:'image/png'});
@@ -453,7 +476,7 @@ class NengeController{
             C.runaction('StartFromFile',[elm,html]);
         },
         async ShowSRM(){
-            let C=this,M=C.Module,T=M.T,html="";
+            let C=this,M=C.M,T=M.T,html="";
             let list = await M.db.userdata.keys();
             list.forEach(async entry=>{
                 let [key,data]= entry;
@@ -472,7 +495,7 @@ class NengeController{
             return ;
         },
         async getRoomsList(){
-            let C=this,M=C.Module,T=M.T;
+            let C=this,M=C.M,T=M.T;
             let list = await  M.db.rooms.keys(),html="";
             html =`<h3>${T.getLang('Cache Game File')}<button data-act="upload">${T.getLang('Import Game File')}</button></h3><ul class="game-result">`;
             if(list&&list.length>0){
@@ -484,7 +507,7 @@ class NengeController{
             return html;
         },
         async StartFromFile(elm,html){
-            let C=this,M=C.Module,T=M.T;
+            let C=this,M=C.M,T=M.T;
             html = html||"";
             html+= await C.runaction('getRoomsList');
             elm.html(html);
@@ -497,6 +520,10 @@ class NengeController{
                 }
                 e.stopPropagation();
             },{passive:false}));
+            C.runaction('setInfoEvent',[elm]);
+        },
+        setInfoEvent(elm){
+            let C=this,M=C.M,T=M.T;
             let result = elm.$('.game-result');
             elm.click(async e=>{
                 if(elm.active) return;
@@ -542,25 +569,26 @@ class NengeController{
                         let next = obj.nextElementSibling;
                         next.hidden = !next.hidden;
                     }else if(act=="close"){
-                        T.$('.g-info').hidden = true;
+                        M.$('.gbaemu-startinfo').hidden = true;
                     }else if(act=="loadcheat"){
-                        if(T.$('.cheat_txt')){
+                        if(M.$('.cheat_txt')){
                             let cheat = await M.runaction('loadCheat');
-                            if(cheat instanceof Uint8Array)T.$('.cheat_txt').value = new TextDecoder().decode(cheat);
+                            if(cheat instanceof Uint8Array)M.$('.cheat_txt').value = new TextDecoder().decode(cheat);
                             else M.runaction('showMsg',[T.getLang('no cheat can load from local!')]);
                         }
                     }else if(act=="applycheat"){
-                        if(T.$('.cheat_txt')){
-                            let value = T.$('.cheat_txt').value||"";
+                        if(M.$('.cheat_txt')){
+                            let value = M.$('.cheat_txt').value||"";
                             C.cheatTxt = value;
                             if(value){                                
-                                M.runaction('applyCheatCode',[value]);
-                                M.runaction('showMsg',[T.getLang('cheat is apply and save!')]);
+                                let num = M.runaction('applyCheatCode',[value]);
+                                if(num)M.runaction('showMsg',[num+T.getLang('cheat is apply and save!')]);
+                                else M.runaction('showMsg',[T.getLang('no cheat apply!')]);
                             }
-                            if(T.$('.cheat_txt'))T.$('.cheat_txt').value = value;
+                            if(M.$('.cheat_txt'))M.$('.cheat_txt').value = value;
                         }
                     }else if(act=="close"){
-                        T.$('.g-info').hidden = true;
+                        M.$('.gbaemu-startinfo').hidden = true;
                     }else if(act=="gamepad"){
                         C.Selectgamepad = obj.getAttribute('data-padid');
                         console.log(C.Selectgamepad);
@@ -569,11 +597,11 @@ class NengeController{
                         M.runaction('showMsg',[T.getLang('setting remove but may be restart!')]);
                     }else if(act=="applykey"){
                         let keymap = [],gamePadKeyMap={};
-                        T.$$('input[data-act="Keyboard"]').forEach(v=>{
+                        M.$$('input[data-act="Keyboard"]').forEach(v=>{
                             keymap.push(v.value);
                         });
                         
-                        T.$$('input[data-act="gamepad"]').forEach(v=>{
+                        M.$$('input[data-act="gamepad"]').forEach(v=>{
                             gamePadKeyMap[v.getAttribute('data-padid')] = v.value;
                         });
                         localStorage.setItem('vba-setting',JSON.stringify({keymap,gamePadKeyMap}));
@@ -595,6 +623,8 @@ class NengeController{
                     }
                 }
             });
+
+
         },
         addStatusItem(elm,txt){
             let li = this.T.$ct('li',txt);
@@ -602,7 +632,7 @@ class NengeController{
             return li;
         },
         async addroomItem(elm,filename,contents){
-            let C=this,M=C.Module,T=M.T,html="";
+            let C=this,M=C.M,T=M.T,html="";
             if(contents){
                 filename = T.F.getname(filename).replace(/\.\w+$/,'')+'.gba';
                 if (contents[0xB2] != 0x96) {
@@ -620,8 +650,8 @@ class NengeController{
             elm.appendChild(li);
         },
         async Filemanager(){
-            let C=this,M=C.Module,T=M.T,html="";
-            T.$('.g-info').hidden = false;
+            let C=this,M=C.M,T=M.T,html="";
+            M.$('.gbaemu-startinfo').hidden = false;
             html +=`<h3>${T.getLang('File Manager')}<button data-act="close">${T.getLang('close')}</button></h3><ul class="dblist">`;
             await Promise.all(Array.from(T.F.StoreList[T.DB_NAME].objectStoreNames).map(async dbname=>{
                 let list = await T.getStore(dbname).keys();
@@ -638,7 +668,7 @@ class NengeController{
                 }
             }));
             html+='</ul>';
-            T.$('.g-lastInfo').innerHTML = html;
+            M.$('.g-lastInfo').innerHTML = html;
         }
     };
     gamePadKeyMap = {
@@ -665,7 +695,7 @@ class NengeController{
             }
         });
         if(id){
-            let elm = T.$('input[data-padid='+id+']');
+            let elm = M.$('input[data-padid='+id+']');
             if(elm){
                 
             Array.from(gamepad.buttons).forEach((entry,index)=>{
@@ -692,7 +722,7 @@ class NengeController{
         return keyState;
     }
     loadgamepad(e){
-        let C=this,M=C.Module,T=M.T,html="";
+        let C=this,M=C.M,T=M.T,html="";
         M.runaction('showMsg',['Gamepad '+e.type+':'+e.gamepad.id]);
         console.log(
             "Gamepad connected at index %d: %s. %d buttons, %d axes.",
