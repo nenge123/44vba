@@ -5,21 +5,6 @@ body {
 }
 
 .gbaemu {
-    &.active {
-        .gbaemu-container {
-            display: none;
-        }
-    }
-
-    &:not([class~='active']) {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 10000;
-    }
-
     [type=button],
     [type=reset],
     [type=submit],
@@ -74,7 +59,6 @@ body {
     .p-1 {
         padding: .675rem;
     }
-
     .gba-menu {
         display: flex;
         flex-direction: row;
@@ -82,55 +66,54 @@ body {
         flex-wrap: nowrap;
         align-items: center;
         padding: 0px 10px;
-        background-color: #fff;
-
-        .gba-menubtn {
+        height: 30px;
+        >.gba-menubtn,>.gba-downbtn{
             border: 0;
-            width: 2rem;
-            height: 2rem;
+            width: 1.5rem;
+            height: 1.5rem;
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #1e293b;
             border-color: transparent;
-            padding: 0 0;
-            font-size: 1rem;
-            line-height: 1;
             background-color: transparent;
             border-radius: 4px;
-
-            >span {
-                color: #1e293b;
-                border-color: rgba(0, 0, 0, .1);
-                height: 2px;
-                width: 1.25em;
-                background: currentColor;
-                border-radius: 10px;
-                position: relative;
-                display: inline-block;
-                vertical-align: middle;
-
+            >span{
+                position: absolute;
+                margin: auto;
+                left: 0;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                background:currentColor;
                 &:after,
                 &:before {
                     content: "";
                     display: block;
+                    background: inherit;
+                    position: absolute;
+                }
+            }
+            &:hover{
+                background: #00c1ed;
+                color: #fff;
+            }
+        }
+        >.gba-menubtn {
+            >span {
+                height: 2px;
+                width: 1.25rem;
+                &:after,
+                &:before {
                     height: inherit;
                     width: inherit;
                     border-radius: inherit;
-                    background: inherit;
-                    position: absolute;
-                    left: 0;
                     transition: inherit;
+                    left: 0;
                 }
-
             }
 
             &:not([class~='active']) {
                 >span {
                     transform: rotate(0deg);
                     transition: transform .1s, margin .3s, opacity 0s .3s;
-
                     &:after,
                     &:before {
                         transform: rotate(0deg);
@@ -145,7 +128,6 @@ body {
                     }
                 }
             }
-
             &.active {
                 >span {
                     transform: rotate(-45deg);
@@ -159,33 +141,15 @@ body {
                     &:after {
                         margin-top: 0;
                         transform: rotate(90deg);
+                        opacity: 0;
                     }
                 }
             }
         }
-
-        .gba-downbtn {
-            border: 0;
-            width: 2rem;
-            height: 2rem;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #1e293b;
-            border-color: transparent;
-            padding: 0 0;
-            font-size: 1rem;
-            line-height: 1;
-            background-color: transparent;
-            border-radius: 4px;
-            text-align: center;
-
+        >.gba-downbtn {
             >span {
                 width: 3px;
-                background: #000;
                 height: 50%;
-
                 &:after {
                     margin-left: 3px;
                     transform: rotate(45deg);
@@ -193,34 +157,18 @@ body {
                 }
 
                 &:before {
-                    margin-left: -4px;
+                    margin-left: -3px;
                     transform: rotate(-45deg);
 
                 }
-
                 &:after,
                 &:before {
-                    content: "";
                     height: 10px;
-                    width: 2px;
-                    position: absolute;
+                    width: 3px;
                     top: 50%;
-                    background: #000;
-                }
-            }
-
-            &:hover {
-                >span {
-                    background-color: #009ffb;
-
-                    &:after,
-                    &:before {
-                        background-color: #009ffb;
-                    }
                 }
             }
         }
-
         .gba-title {
             flex-grow: 1;
             overflow: hidden;
@@ -231,19 +179,13 @@ body {
         }
     }
 
-    .gba-menu:not([hidden])+.gbaemu-container {
-        top: 30px;
-    }
-
-    .gba-menu[hidden]+.gbaemu-container {
-        top: 0px;
-    }
 
     .gbaemu-container {
         position: absolute;
         left: 0;
         right: 0;
         bottom: 0;
+        transition: all .3s;
         .gbaemu-startinfo {
             position: absolute;
             z-index: 900;
@@ -738,5 +680,57 @@ body {
         }
 
     }
+    &.active {
+        display: inline-block;
+        >.gba-menu{
+            border: 1px solid #000;
+            border-radius: 5px;
+            color: #fff;
+            background:linear-gradient(0deg, #075eff, #00e2f9);
+            >.gba-menubtn{
+                margin-right: 10px;
+            }
+            >.gba-downbtn{
+                margin-left: 10px;
+            }
+            >.gba-downbtn,>.gba-menubtn{
+                &:hover {
+                    background: #ff9900;
+                }
+                span::before,span::after,span{
+                    background-color: #fff;
+                }
+            }
+        }
+        >.gba-menu + .gbaemu-container {
+            height: 0px;
+            width: 0px;
+            top:30px;
+            overflow: hidden;
+        }
+    }
+    &:not([class~='active']) {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 10000;
+        .gba-menu{
+            color: #000;
+            background-color: #fff;
+        }
+        .gbaemu-container{
+            width: 100%;
 
+        }
+        >.gba-menu:not([hidden])+.gbaemu-container {
+            top: 30px;
+            height: calc(100vh - 30px);
+        }
+        >.gba-menu[hidden]+.gbaemu-container {
+            top: 0px;
+            height: 100vh;
+        }
+    }
 }

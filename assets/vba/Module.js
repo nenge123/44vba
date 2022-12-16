@@ -129,12 +129,12 @@ var Module = new class {
         if(!this.looptime)M.emuLoop();
         return M.runaction('tryInitSound');
     }
-    async FetchRoom(path){
+    async FetchRoom(path,version){
         let M=this,T=M.T;
         let selm = M.runaction('addloadStatus',`${path} : ${M.getLang('download...')}`),u8 = await T.FetchItem({url:path,store:M.db.rooms,unpack:true,process:e=>{
-            selm.innerHTML = `${path} : ${e}`;
-        }});
-        selm.innerHTML = `${path} : ${M.getLang('compelte...')}`;
+            if(selm)selm.innerHTML = `${path} : ${e}`;
+        },'version':version||T.version});
+        if(selm)selm.innerHTML = `${path} : ${M.getLang('compelte...')}`;
         this.reloadRoom(T.F.getname(path),u8);
     }
     reloadRoom(gameID,u8){

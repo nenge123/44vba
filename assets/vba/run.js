@@ -31,8 +31,11 @@ Nenge.docload(function(){
              * */ 
             elm.Module = (new Function('Nenge,elm',loaderjs+';return Module'))(T,elm);
             elm.Module.StartVBA = async ()=>{
-                    let gamepath = T.attr(elm,'data-path');
-                    elm.Module.FetchRoom(gamepath);
+                let gamepath = T.attr(elm,'data-path');
+                let version = T.attr(elm,'data-version');
+                console.log(version);
+                //对于持续更新的务必启用 data-version 否则缓存会一直不更新
+                    elm.Module.FetchRoom(gamepath,version||undefined);
             };
 
             });
