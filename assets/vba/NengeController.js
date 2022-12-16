@@ -224,13 +224,13 @@ class NengeController{
             let C=this,T=C.T,I=C.I,M = C.M,
                 html=`<h3>FPS:<span class="g-status">${M.fps}</span></h3><label><input class="gba-fps-input" type="range" min="29" max="180" value="${M.fps}"></label><ul>`;
             I.toArr(C.MenuList,entry=>{
-                html += `<li><button type="button" class="g-btn g-blue" data-act="${entry[0]}">${T.getLang(entry[1])}</button>`;
+                html += `<li><button type="button" class="g-btn g-blue" data-act="${entry[0]}">${M.getLang(entry[1])}</button>`;
             });
             html+='</li></ul>';
-            html+=`<h3>${T.getLang('shader mode')}</h3><ul>`;
+            html+=`<h3>${M.getLang('shader mode')}</h3><ul>`;
             ['Pixelated','Smooth','XBRZ'].forEach(
                 (v,i)=>{
-                    html += `<li><button type="button" class="g-btn g-blue" data-act="setShader" data-value="${i}">${T.getLang(v)}</button>`;
+                    html += `<li><button type="button" class="g-btn g-blue" data-act="setShader" data-value="${i}">${M.getLang(v)}</button>`;
                 }
             )
             html+='</ul>';
@@ -326,18 +326,18 @@ class NengeController{
                 ///console.log(u8ddata);
                 if(u8ddata)C.cheatTxt = new TextDecoder().decode(u8ddata);
             }
-            html +=`<p><textarea class="cheat_txt">${C.cheatTxt||""}</textarea></p><p>${T.getLang('Cheat code:\nGameshark: XXXXXXXXYYYYYYYY\nAction Replay: XXXXXXXX YYYY')}</p><p><button data-act="applycheat">${T.getLang('apply cheat')}</button> <button data-act="loadcheat">${T.getLang('load cheat')}</button> <button data-act="close">${T.getLang('close')}</button></p><div class="cheat-result"></div>`;
+            html +=`<p><textarea class="cheat_txt">${C.cheatTxt||""}</textarea></p><p>${M.getLang('Cheat code:\nGameshark: XXXXXXXXYYYYYYYY\nAction Replay: XXXXXXXX YYYY')}</p><p><button data-act="applycheat">${M.getLang('apply cheat')}</button> <button data-act="loadcheat">${M.getLang('load cheat')}</button> <button data-act="close">${M.getLang('close')}</button></p><div class="cheat-result"></div>`;
             M.$('.g-lastInfo').innerHTML = html;
 
         },
         async keysetting(){
             let C=this,M=C.M,T=M.T,html="";
             M.$('.gbaemu-startinfo').hidden = false;
-            html +=`<table class="g-keysetting"><tr><td>${T.getLang('keyname')}</td><td>${T.getLang('Keyboard')}</td><td>${T.getLang('gamepad')}</td></tr>`;
+            html +=`<table class="g-keysetting"><tr><td>${M.getLang('keyname')}</td><td>${M.getLang('Keyboard')}</td><td>${M.getLang('gamepad')}</td></tr>`;
             C.keyList.forEach((v,index)=>{
                 html+=`<tr><th>${v}</th><td><input type="text" data-act="Keyboard" value="${C.keymap[index]}"></td><td><input type="text" data-act="gamepad" data-padid="${v}" value="${C.gamePadKeyMap[v]}"></td></tr>`;
             });
-            html+=`</table><p><button data-act="applykey">${T.getLang('apply setting')}</button><button data-act="clearkey">${T.getLang('clear setting')}</button><button data-act="close">${T.getLang('close')}</button></p>`;
+            html+=`</table><p><button data-act="applykey">${M.getLang('apply setting')}</button><button data-act="clearkey">${M.getLang('clear setting')}</button><button data-act="close">${M.getLang('close')}</button></p>`;
             M.$('.g-lastInfo').innerHTML = html;
         },
         sendInputKey(touchlist,newlist){
@@ -471,7 +471,7 @@ class NengeController{
             if(lastgame){
                 let img = await M.db.userdata.data("/userdata/screenshots/"+lastgame.replace(/\.gba/,'.png'));
                 if(img)M.imgList[lastgame] = T.F.URL(img,{type:'image/png'});
-                html +=`<h3>${T.getLang('last play')}</h3><div><p>${lastgame}</p><p><button data-game="${lastgame}">${T.getLang('Run this Game')}</button></p>${(M.imgList[lastgame]?`<p><img src="${M.imgList[lastgame]}" width="240"></p>`:'')}</div>`;
+                html +=`<h3>${M.getLang('last play')}</h3><div><p>${lastgame}</p><p><button data-game="${lastgame}">${M.getLang('Run this Game')}</button></p>${(M.imgList[lastgame]?`<p><img src="${M.imgList[lastgame]}" width="240"></p>`:'')}</div>`;
             }
             C.runaction('StartFromFile',[elm,html]);
         },
@@ -486,7 +486,7 @@ class NengeController{
                         if( M.imgList[key])T.F.removeURL(M.imgList[key]);
                         M.imgList[key] = T.F.URL(await M.db.userdata.data(imgname),{type:'image/png'});
                     }
-                    html+=`<li><span>${keyname}</span><p><button data-act="loadSrm" data-path="${key}">${T.getLang('load saves')}</button><button data-act="removeSRM" data-path="${key}">${T.getLang('remove saves')}</button></p>${(M.imgList[key]?`<p><img src="${M.imgList[key]}"  width="240"></p>`:'')}</li>`;
+                    html+=`<li><span>${keyname}</span><p><button data-act="loadSrm" data-path="${key}">${M.getLang('load saves')}</button><button data-act="removeSRM" data-path="${key}">${M.getLang('remove saves')}</button></p>${(M.imgList[key]?`<p><img src="${M.imgList[key]}"  width="240"></p>`:'')}</li>`;
                 }
             });
             if(html){
@@ -497,10 +497,10 @@ class NengeController{
         async getRoomsList(){
             let C=this,M=C.M,T=M.T;
             let list = await  M.db.rooms.keys(),html="";
-            html =`<h3>${T.getLang('Cache Game File')}<button data-act="upload">${T.getLang('Import Game File')}</button></h3><ul class="game-result">`;
+            html =`<h3>${M.getLang('Cache Game File')}<button data-act="upload">${M.getLang('Import Game File')}</button></h3><ul class="game-result">`;
             if(list&&list.length>0){
                 list.forEach(key=>{
-                    html+=`<li><span>${key}</span><p><button data-game="${key}">${T.getLang('Run this Game')}</button><button data-act="remove" data-game="${key}">${T.getLang('remove Game')}</button></p></li>`;
+                    html+=`<li><span>${key}</span><p><button data-game="${key}">${M.getLang('Run this Game')}</button><button data-act="remove" data-game="${key}">${M.getLang('remove Game')}</button></p></li>`;
                 });
             }
             html+='</ul>';
@@ -534,9 +534,9 @@ class NengeController{
                         C.upload(async files=>{
                             await Promise.all(Array.from(files).map(async file=>{
                                 let u8 = new Uint8Array(await file.arrayBuffer()) ,filename = file.name;
-                                let selm = C.runaction('addStatusItem',[result,`${filename} ${T.getLang('Import ...')}`]);
+                                let selm = C.runaction('addStatusItem',[result,`${filename} ${M.getLang('Import ...')}`]);
                                 u8 = await T.unFile(u8,e=>{
-                                    selm.innerHTML = `${filename} ${T.getLang('unpack status')}: ${e}`;
+                                    selm.innerHTML = `${filename} ${M.getLang('unpack status')}: ${e}`;
                                 });
                                 if(u8 instanceof Uint8Array){
                                     C.runaction('addroomItem',[result,filename,u8])
@@ -555,7 +555,7 @@ class NengeController{
                         obj.parentNode.parentNode.remove();
                     }else if(act=="downstore"){
                         let dbname = obj.getAttribute('data-db'),key = obj.getAttribute('data-key');
-                        if(dbname==M.db.libjs.table)return M.runaction('showMsg',[T.getLang('this data cant download!')]);
+                        if(dbname==M.db.libjs.table)return M.runaction('showMsg',[M.getLang('this data cant download!')]);
                         let downdata = await T.getStore(dbname).data(key);
                         if(downdata instanceof Uint8Array) T.down(T.F.getname(key),downdata);
                         else if(downdata){
@@ -566,7 +566,7 @@ class NengeController{
                         M.reloadRoom(key,await T.getStore(dbname).data(key));
                     }else if(act=="removestore"){
                         let dbname = obj.getAttribute('data-db');
-                        if(dbname==M.db.libjs.table)return alert(T.getLang('this data cant download!'));
+                        if(dbname==M.db.libjs.table)return alert(M.getLang('this data cant download!'));
                         T.getStore(dbname).remove(obj.getAttribute('data-key'));
                         obj.parentNode.parentNode.remove();
                     }else if(act=="toggleUl"){
@@ -578,7 +578,7 @@ class NengeController{
                         if(M.$('.cheat_txt')){
                             let cheat = await M.runaction('loadCheat');
                             if(cheat instanceof Uint8Array)M.$('.cheat_txt').value = new TextDecoder().decode(cheat);
-                            else M.runaction('showMsg',[T.getLang('no cheat can load from local!')]);
+                            else M.runaction('showMsg',[M.getLang('no cheat can load from local!')]);
                         }
                     }else if(act=="applycheat"){
                         if(M.$('.cheat_txt')){
@@ -586,8 +586,8 @@ class NengeController{
                             C.cheatTxt = value;
                             if(value){                                
                                 let num = M.runaction('applyCheatCode',[value]);
-                                if(num)M.runaction('showMsg',[num+T.getLang('cheat is apply and save!')]);
-                                else M.runaction('showMsg',[T.getLang('no cheat apply!')]);
+                                if(num)M.runaction('showMsg',[num+M.getLang('cheat is apply and save!')]);
+                                else M.runaction('showMsg',[M.getLang('no cheat apply!')]);
                             }
                             if(M.$('.cheat_txt'))M.$('.cheat_txt').value = value;
                         }
@@ -598,7 +598,7 @@ class NengeController{
                         console.log(C.Selectgamepad);
                     }else if(act=="clearkey"){
                         localStorage.removeItem('vba-setting');
-                        M.runaction('showMsg',[T.getLang('setting remove but may be restart!')]);
+                        M.runaction('showMsg',[M.getLang('setting remove but may be restart!')]);
                     }else if(act=="applykey"){
                         let keymap = [],gamePadKeyMap={};
                         M.$$('input[data-act="Keyboard"]').forEach(v=>{
@@ -609,7 +609,7 @@ class NengeController{
                             gamePadKeyMap[v.getAttribute('data-padid')] = v.value;
                         });
                         localStorage.setItem('vba-setting',JSON.stringify({keymap,gamePadKeyMap}));
-                        M.runaction('showMsg',[T.getLang('setting is save!')]);
+                        M.runaction('showMsg',[M.getLang('setting is save!')]);
 
                     }else if(!act){
                         let gamename = obj.getAttribute('data-game');
@@ -650,23 +650,23 @@ class NengeController{
                 });
                 contents = null;
             }
-            let li = T.$ct('li',`<span>${filename}</span><button data-game="${filename}">${T.getLang('Run this Game')}</button>`);
+            let li = T.$ct('li',`<span>${filename}</span><button data-game="${filename}">${M.getLang('Run this Game')}</button>`);
             elm.appendChild(li);
         },
         async Filemanager(){
             let C=this,M=C.M,T=M.T,html="";
             M.$('.gbaemu-startinfo').hidden = false;
-            html +=`<h3>${T.getLang('File Manager')}<button data-act="close">${T.getLang('close')}</button></h3><ul class="dblist">`;
+            html +=`<h3>${M.getLang('File Manager')}<button data-act="close">${M.getLang('close')}</button></h3><ul class="dblist">`;
             await Promise.all(Array.from(T.F.StoreList[T.DB_NAME].objectStoreNames).map(async dbname=>{
                 let list = await T.getStore(dbname).keys();
                 if(list.length>0){
-                    html+=`<li><h4 data-act="toggleUl">${dbname} ${T.getLang('toggle')}</h4><ul hidden>`;
+                    html+=`<li><h4 data-act="toggleUl">${dbname} ${M.getLang('toggle')}</h4><ul hidden>`;
                     list.forEach(key=>{
                         let r = "";
                         if(dbname=='rooms'){
-                            r = `<button data-act="reRun" data-db="${dbname}" data-key="${key}">${T.getLang('Run')}</button>`;
+                            r = `<button data-act="reRun" data-db="${dbname}" data-key="${key}">${M.getLang('Run')}</button>`;
                         }
-                        html+=`<li><span>${key}</span><p>${r}<button data-act="downstore" data-db="${dbname}" data-key="${key}">${T.getLang('download')}</button><button data-act="removestore" data-db="${dbname}" data-key="${key}">${T.getLang('remove')}</button></p></li>`;
+                        html+=`<li><span>${key}</span><p>${r}<button data-act="downstore" data-db="${dbname}" data-key="${key}">${M.getLang('download')}</button><button data-act="removestore" data-db="${dbname}" data-key="${key}">${M.getLang('remove')}</button></p></li>`;
                     });
                     html+='</ul></li>';
                 }

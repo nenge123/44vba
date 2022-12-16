@@ -10,13 +10,19 @@ var Module = new class {
             'data-libjs': {},
         };
         I.defines(this, { T, I }, 1);
-        I.defines(T, {Module:this}, 1);
         this.JSpath = T.JSpath.split('/').slice(0, -2).join('/') + '/vba/';
-        if(elm&&elm.JSpath){
-            this.JSpath = elm.JSpath;
+        if(elm){
+            if(elm.JSpath)this.JSpath = elm.JSpath;
+            elm.innerHTML = `<div class="gbaemu"><div class="gba-menu"><div class="gba-menubtn"><span class="gba-menu-icon"></span></div><div class="gba-title"></div><div class="gba-downbtn"><span class="gba-menu-icon"></span></div></div><div class="gbaemu-container"><div class="gbaemu-startinfo">Ver. 20221116 | wasm power by <a href="https://github.com/44670/44vba">GitHub:44670/44vba</a><p class="infotips">Your files are processed locally and won't be uploaded to any server.<br>This software should not be used to play games you have not legally obtained.<br>"GBA", "Game Boy Advance" are trademarks of Nintendo Co.,Ltd, This site is not associated with Nintendo in any way.</p><div class="welcome"></div><div class="g-lastInfo"></div></div><div class="gbaemu-main no-select"><canvas width="240" height="160"></canvas><div class="user-controller"></div></div><div class="g-showtxt"></div></div></div>`;
+            I.defines(elm, {Module:this}, 1);
+        }else{
+            I.defines(T, {Module:this}, 1);
         }
+        this.emuElm = Nttr(T.$('.gbaemu',elm));
+        console.log(this.emuElm);
         this.version = 1;
         this.runaction = T.runaction;
+        this.getLang = T.getLang;
         this.db = {
             userdata:T.getStore('userdata'),
             rooms:T.getStore('rooms'),
@@ -24,7 +30,6 @@ var Module = new class {
         };
         this.fps = 60;
         T.docload(async () =>{
-            this.emuElm = Nttr(T.$('.gbaemu',elm));
             this.loadCores()
         });
     }
@@ -44,7 +49,7 @@ var Module = new class {
             if(txt=='GBA: Warning: Codes seem to be for a different game.'){
                 let elm = M.$('.cheat-result');
                 M.cheatErroTxt += M.cheatNowTxt;
-                if(elm)elm.innerHTML = `<h3>${T.getLang('cheat Erro')}</h3>${M.cheatErroTxt}`;
+                if(elm)elm.innerHTML = `<h3>${M.getLang('cheat Erro')}</h3>${M.cheatErroTxt}`;
                 M.cheatNowTxt="";
             }
         }
@@ -58,21 +63,24 @@ var Module = new class {
         M.runaction('setNavMenu');
         M.canvas = M.$('canvas');
         //下载语言包
-        T.lang = await T.FetchItem({ url: M.JSpath + 'language/' + T.language + '.json?t='+T.time, 'type': 'json' });
+        if(typeof USERLANG != 'undefined'){
+            M.lang = USERLANG[T.language];
+        }
+        if(!M.lang)M.lang = await T.FetchItem({ url: M.JSpath + 'language/' + T.language + '.json?t='+T.time, 'type': 'json' });
         //非测试模式应该为 缓存加载模式,强制更新添加version参数
         /**
-         * T.lang = await T.FetchItem({ url: M.JSpath + 'language/' + T.language + '.json?t='+T.time, 'type': 'json',store:M.db.libjs});
+         * M.lang = await T.FetchItem({ url: M.JSpath + 'language/' + T.language + '.json?t='+T.time, 'type': 'json',store:M.db.libjs});
          */
-        let selm = M.runaction('addloadStatus',`44gba.zip : ${T.getLang('loading...')}`)
-        //if(selm)welm.innerHTML = `<p>44gba.zip</p><p class="status">${T.getLang('loading...')}</p>`;
+        let selm = M.runaction('addloadStatus',`44gba.zip : ${M.getLang('loading...')}`)
+        //if(selm)welm.innerHTML = `<p>44gba.zip</p><p class="status">${M.getLang('loading...')}</p>`;
         let CacheFile = await T.FetchItem({
             url: M.JSpath + '44gba.zip', store: 'data-libjs', key: 'vba-core', version: M.version, unpack: true,
             process: e => {
                 if(selm)selm.innerHTML = `44gba.zip : ${e}`;
             },
-            packtext: T.getLang('unpack'),
+            packtext: M.getLang('unpack'),
         });
-        selm.innerHTML = `44gba.zip : ${T.getLang('Ready!')}`;
+        selm.innerHTML = `44gba.zip : ${M.getLang('Ready!')}`;
         let asmjs = new TextDecoder().decode(CacheFile['44gba.js']);
         asmjs = asmjs.replace('wasmReady()', 'Module.wasmReady()').replace('writeAudio(', 'Module.writeAudio(').replace(/var\s?arguments_\s?=\s?\[\];/,'var arguments_ = ["-v"];');
         M.wasmBinary = CacheFile['44gba.wasm'];
@@ -107,7 +115,7 @@ var Module = new class {
         */
        let startInfo = M.Nttr('.gbaemu-startinfo');
        if(startInfo)startInfo.hidden=true;
-       localStorage.setItem('last-game',Module.gameID);
+       localStorage.setItem('last-game',M.gameID);
         M.HEAPU8.set(u8, M.romBuffer);
         var ret = M._emuLoadROM(u8.length);
         //wasmSaveBuf.set(data)
@@ -123,10 +131,10 @@ var Module = new class {
     }
     async FetchRoom(path){
         let M=this,T=M.T;
-        let selm = M.runaction('addloadStatus',`${path} : ${T.getLang('download...')}`),u8 = await T.FetchItem({url:path,store:M.db.rooms,unpack:true,process:e=>{
+        let selm = M.runaction('addloadStatus',`${path} : ${M.getLang('download...')}`),u8 = await T.FetchItem({url:path,store:M.db.rooms,unpack:true,process:e=>{
             selm.innerHTML = `${path} : ${e}`;
         }});
-        selm.innerHTML = `${path} : ${T.getLang('compelte...')}`;
+        selm.innerHTML = `${path} : ${M.getLang('compelte...')}`;
         this.reloadRoom(T.F.getname(path),u8);
     }
     reloadRoom(gameID,u8){
@@ -190,12 +198,12 @@ var Module = new class {
     async wasmReady() {
         let M = this, T = M.T;
         if(!M.Controller)M.Controller = new NengeController(M);
-        M.romBuffer = Module._emuGetSymbol(1);
-        M.SrmPtr = Module._emuGetSymbol(2);
-        M.wasmSaveBuf = Module.HEAPU8.subarray(M.SrmPtr,M.SrmPtr + M.srmLength);
-        M.ImgPtr = Module._emuGetSymbol(3);
+        M.romBuffer = M._emuGetSymbol(1);
+        M.SrmPtr = M._emuGetSymbol(2);
+        M.wasmSaveBuf = M.HEAPU8.subarray(M.SrmPtr,M.SrmPtr + M.srmLength);
+        M.ImgPtr = M._emuGetSymbol(3);
         let canvas = M.canvas, width = canvas.width, height = canvas.height;
-        var imgFrameBuffer = new Uint8ClampedArray(Module.HEAPU8.buffer).subarray(M.ImgPtr, M.ImgPtr + 240 * 160 * 4);
+        var imgFrameBuffer = new Uint8ClampedArray(M.HEAPU8.buffer).subarray(M.ImgPtr, M.ImgPtr + 240 * 160 * 4);
         M.idata = new ImageData(imgFrameBuffer, 240, 160);
         M.isWasmReady = true;
         await M.Controller.runaction('setShader',[M.optScaleMode]);
@@ -212,7 +220,7 @@ var Module = new class {
         */
         M.$('.welcome').remove();
         delete M.wasmBinary;
-        if(M.$('.infotips'))M.$('.infotips').innerHTML = T.getLang('This site is not associated with Nintendo in any way.Import your Homemade games. enter \'ESC\' show Menu when you running!');
+        if(M.$('.infotips'))M.$('.infotips').innerHTML = M.getLang('This site is not associated with Nintendo in any way.Import your Homemade games. enter \'ESC\' show Menu when you running!');
         M.Controller.runaction('StartInfo');
     }
     writeAudio(ptr, frames) {
@@ -308,7 +316,7 @@ var Module = new class {
         },
         async saveSRM(){
             let M = this, T = M.T,name = M.GameName;
-            M.runaction('showMsg',[T.getLang('Auto saving, please wait...'),80000]);
+            M.runaction('showMsg',[M.getLang('Auto saving, please wait...'),80000]);
             M.canvas.toBlob(async blob=>{
                 await M.db.userdata.put("/userdata/screenshots/"+name+'.png',{
                     'contents':new Uint8Array(await blob.arrayBuffer()),
@@ -321,7 +329,7 @@ var Module = new class {
                 'mode':33206,
                 'timestamp':T.date
             });
-            M.runaction('showMsg',[T.getLang('saves file is ok'),1000]);
+            M.runaction('showMsg',[M.getLang('saves file is ok'),1000]);
         },
         async loadSRM(u8){
             let M = this,T=M.T;
@@ -330,7 +338,7 @@ var Module = new class {
                 M.wasmSaveBuf.set(u8.slice(0,M.srmLength));
                 M.runaction('clearSaveBufState');
                 M._emuResetCpu();
-                M.runaction('showMsg',[T.getLang('this saves is temp to load.<br>the local saves is not change!'),5000]);
+                M.runaction('showMsg',[M.getLang('this saves is temp to load.<br>the local saves is not change!'),5000]);
                 M.isRunning = true;
             }else{
                 return await  M.db.userdata.data("/userdata/saves/"+M.GameName+'.srm');
@@ -340,7 +348,7 @@ var Module = new class {
             let M = this,srmname = M.GameName+'.srm';
             let u8 = await M.db.userdata.data("/userdata/saves/"+srmname);
             if(u8)M.T.down(srmname,u8);
-            else M.runaction('showMsg',[M.T.getLang('no saves file!')]);;
+            else M.runaction('showMsg',[M.getLang('no saves file!')]);;
             u8=null;
         },
         async loadCheat(){
@@ -548,7 +556,7 @@ var Module = new class {
                 console.log(line,lineBuf.length);
                 gbuf.set(lineBuf);
                 gbuf[lineBuf.length] = 0;
-                Module._emuAddCheat(ptrGBuf);
+                M._emuAddCheat(ptrGBuf);
             if(CheatText){
                 let cheatBuf = new TextEncoder().encode(CheatText.trim());
                 gbuf.set(cheatBuf);
@@ -565,9 +573,12 @@ var Module = new class {
             let M=this,T=M.T,menubtn = M.Nttr('.gba-menubtn');
             if(menubtn){
                 menubtn.click(e=>{
-                    let active = menubtn.active;
-                    menubtn.active = !active;
-                    M.emuElm.active = !active;
+                    let active = !menubtn.active;
+                    menubtn.active = active;
+                    M.emuElm.active = active;
+                    if(typeof M.isRunning!='undefined'){
+                        M.isRunning = !active;
+                    }
                 });
             }
             let downbtn = M.Nttr('.gba-downbtn');
@@ -593,4 +604,4 @@ var Module = new class {
         };
         input.click();
     }
-}(Nenge);
+}(Nenge,typeof elm !='undefined'?elm:undefined);

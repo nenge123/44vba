@@ -338,12 +338,14 @@ const Nenge = new class NengeCores {
             console.log('lost action:' + action);
         }
     }
-    addJS(buf, cb, iscss) {
+    addJS(buf, cb, iscss,id) {
+            if(id&&this.$('#link_'+id))return;
         let re = false, script = document.createElement(!iscss ? 'script' : 'link'), func = callback => {
             if (!/^(blob:)?https?:\/\//.test(buf) && !/(\.js$|\.css$)/.test(buf)) {
                 re = true;
                 buf = this.F.URL(buf, this.F.gettype(!iscss ? 'js' : 'css'));
             }
+            
             if (iscss) {
                 script.type = this.F.gettype('css');
                 script.href = buf;
@@ -352,6 +354,7 @@ const Nenge = new class NengeCores {
                 script.type = this.F.gettype('js');
                 script.src = buf;
             }
+            if(id)script.setAttribute('id','link_'+id);
             script.onload = e => {
                 callback && callback(e);
                 if (re) window.URL.revokeObjectURL(buf);
@@ -1556,7 +1559,5 @@ class nWindow {
     init() {
         this.Nttr.html('<div class="card-header"></div><div class="card-body"></div><div class="card-footer"></div>');
         ['header', 'body', 'footer'].forEach(val => this[val] && (this.T.$('.card-' + val, this.obj).innerHTML = this[val]));
-
-
     }
 }
